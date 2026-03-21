@@ -89,6 +89,7 @@ def form(textColor,bgColor,update,marginLeft,width='60%'):
 @ui.page('/test')
 def test():
     ui.page_title('Test Page')
+    print('customized')
     
 @ui.page('/admin')
 def admin():
