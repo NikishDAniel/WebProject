@@ -81,11 +81,23 @@
 
 # ui.run(host='127.0.0.1', port=8080)
 
-import bcrypt,mysql.connector
+# import bcrypt,mysql.connector
 
-connection = mysql.connector.connect(host = '127.0.0.1',user="root",password="Nikish@2003",database="pentecostMatrimony")
-cursor = connection.cursor()
-cursor.execute("update userData set passwords = %s where email='nikishdaniel1@gmail.com'",(bcrypt.hashpw(b'nikish', bcrypt.gensalt()),))
-connection.commit()
-cursor.close()
-print("Password updated successfully")
+# connection = mysql.connector.connect(host = '127.0.0.1',user="root",password="Nikish@2003",database="pentecostMatrimony")
+# cursor = connection.cursor()
+# cursor.execute("update userData set passwords = %s where email='nikishdaniel1@gmail.com'",(bcrypt.hashpw(b'nikish', bcrypt.gensalt()),))
+# connection.commit()
+# cursor.close()
+# print("Password updated successfully")
+
+
+from cryptography.fernet import Fernet
+
+key = Fernet.generate_key()
+print(key)
+# cipher = Fernet(key)
+# password = "da"
+# encrypted = cipher.encrypt(password.encode())
+# decrypted = cipher.decrypt(encrypted).decode()
+# print(encrypted)
+# print(decrypted)
