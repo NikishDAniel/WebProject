@@ -91,13 +91,3 @@
 # print("Password updated successfully")
 
 
-from cryptography.fernet import Fernet
-
-key = Fernet.generate_key()
-print(key)
-# cipher = Fernet(key)
-# password = "da"
-# encrypted = cipher.encrypt(password.encode())
-# decrypted = cipher.decrypt(encrypted).decode()
-# print(encrypted)
-# print(decrypted)
