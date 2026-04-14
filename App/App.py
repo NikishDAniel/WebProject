@@ -260,8 +260,12 @@ def home(email:str):
         if index in [7,8]:widgets[i].disable()
     ui.button('Check',on_click=lambda:print(chips.lists))
     def downloadPdf():
-        import fpdf
-        for i in detailsCard:print(i)
+        from fpdf import FPDF
+        pdf = FPDF()
+        pdf.
+        for i in detailsCard:
+            
+            print(i)
     def showCurrentDetails(i):
         detailsCard.clear()
         with detailsCard:
