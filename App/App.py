@@ -2,8 +2,8 @@ from nicegui import ui,app,run
 import mysql.connector,base64,bcrypt,imghdr,smtplib,asyncio
 # from datetime import datetime
 from cryptography.fernet import Fernet
-from email.mime.text import MIMEText
-from email.mime.multipart import MIMEMultipart
+# from email.mime.text import MIMEText
+# from email.mime.multipart import MIMEMultipart
 
 app.add_static_files('/icons','icons&Images')
 fields = ['Name','Profession','Date of birth','Gender','Qualification','Height','Income','Background','Marital Status','Languages Known',"Father's Name","Mother's Name", "Parent's Number",'Whatsapp Number','Family Status','Hometown','Current Resident Address','Siblings','Local Faith Home','Centre Faith Home','Expectations']
@@ -21,7 +21,7 @@ def anyEmptyField(userForm,photo,languages):
 async def emailValidation(email='',check=0):
     container = ui.column()
     def fetchData():
-        try:connection = mysql.connector.connect(host='127.0.0.1',user='root',password='Nikish@2003',database='pentecostMatrimony',ssl_disabled=True)
+        try:connection = mysql.connector.connect(host='127.0.0.1',user='root',password='Nikish@2003',database='pentecostMatrimony',ssl_disabled=False)
         except mysql.connector.Error as error:
             with container:ui.notification(f'Database error: {str(error)}',type='negative')
             return None
@@ -132,7 +132,16 @@ def notify():
 @ui.page('/test')
 def test():
     ui.page_title('Test Page')
-    ui.spinner();ui.switch()
+    with ui.card():
+        def addSibling(i):
+            with holderCard:
+                currentLabel = ui.label(i)
+                deleteButton = ui.button('Delete',on_click=lambda:[holderCard.remove(currentLabel),holderCard.remove(deleteButton)])
+        holderCard = ui.card().style('overflow-y: auto;')
+        with holderCard:pass
+        relationInput = ui.select(['Elder Brother','Elder Sister','Younger Brother','Younger Sister'],value='Elder Brother')
+        status = ui.checkbox('Married')
+        ui.button('Add',on_click=lambda:addSibling(relationInput.value+(' - Married' if status.value else ' - Single')))
 
 @ui.page('/admin')
 def admin():
@@ -141,7 +150,7 @@ def admin():
                   .scrollable::-webkit-scrollbar-thumb {background: gray;border-radius: 10px;}''')
     async def update(email):
         try:
-            connection = mysql.connector.connect(host='127.0.0.1',user='root',password='Nikish@2003',database='pentecostMatrimony',ssl_disabled=True)
+            connection = mysql.connector.connect(host='127.0.0.1',user='root',password='Nikish@2003',database='pentecostMatrimony',ssl_disabled=False)
             cursor = connection.cursor()
             cursor.execute('''update userData set requestStatus = %s where email = %s''',('Approved',email))
             connection.commit()
@@ -164,7 +173,7 @@ def admin():
                 details.set_visibility(False)
                 with details:
                     index = 0
-                    for data in i[4:-3]:ui.label(fields[index]).style('font-size: 20px; font-weight: bold; font-family: Times New Roman');ui.label(data).classes('break-words').style('font-size: 20px; font-family: Times New Roman');index += 1
+                    for data in i[4:-2]:ui.label(fields[index]).style('font-size: 20px; font-weight: bold; font-family: Times New Roman');ui.label(data).classes('break-words').style('font-size: 20px; font-family: Times New Roman');index += 1
             def removeUser():currentUserMaster.remove(currentUserCard);currentUserMaster.remove(approve);currentUserMaster.remove(reject)
             def updater():asyncio.create_task(update(i[2]));ui.notification(f'{i[2]} approved successfully!');removeUser()
             approve = ui.button('Approve',icon='check',on_click=updater).props('rounded outline color=green')
@@ -175,7 +184,7 @@ def admin():
         async def fetchRequest():
             requestScrollable.clear()
             try:
-                connection = mysql.connector.connect(host='127.0.0.1',user='root',password='Nikish@2003',database='pentecostMatrimony',ssl_disabled=True)
+                connection = mysql.connector.connect(host='127.0.0.1',user='root',password='Nikish@2003',database='pentecostMatrimony',ssl_disabled=False)
                 cursor = connection.cursor()
                 cursor.execute('select * from userData where requestStatus = %s',("Pending",))
                 pendingData = cursor.fetchall()
@@ -195,7 +204,7 @@ def personnelForm():
     async def addData():
         def saveData():
             try:
-                connection = mysql.connector.connect(host='127.0.0.1',user='root',password='Nikish@2003',database='pentecostMatrimony',ssl_disabled=True)
+                connection = mysql.connector.connect(host='127.0.0.1',user='root',password='Nikish@2003',database='pentecostMatrimony',ssl_disabled=False)
                 cursor = connection.cursor()
                 cursor.execute('''insert into userData(Photo,Email,Passwords,Name,Profession,Dob,Gender,Qualification,Height,Income,FamilyOrigin,MaritalStatus,Languages,FatherName,MotherName,ParentsNumber,WhatsAppTelegram,Status,Hometown,CurrentAddress,Siblings,LocalFaithHome,CenterFaithHome,Expectations,requestStatus) VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)''',
                             (userForm.photo,email.value,cipher.encrypt(password.value.encode()).decode('utf-8'))+tuple(widgets[x].value if x!='languagesKnown' else ','.join(chips.lists) for x in widgets)+('Pending',))
@@ -232,7 +241,7 @@ def home(email:str):
         verse = ui.label().classes('text-center').style('font-size: 16px; font-family: Times New Roman; color: blue')
     ui.timer(5,showVerse)
     def fetchData():
-        connection = mysql.connector.connect(host='127.0.0.1',user='root',password='Nikish@2003',database='pentecostMatrimony',ssl_disabled=True)
+        connection = mysql.connector.connect(host='127.0.0.1',user='root',password='Nikish@2003',database='pentecostMatrimony',ssl_disabled=False)
         cursor = connection.cursor()
         cursor.execute('''select * from userData where email = %s''',(email,))
         data = cursor.fetchone()
@@ -260,14 +269,43 @@ def home(email:str):
         if index in [7,8]:widgets[i].disable()
     ui.button('Check',on_click=lambda:print(chips.lists))
     def downloadPdf():
-        from fpdf import FPDF
+        from fpdf import FPDF,FontFace
+        import io
+        data = list(detailsCard.data)
+        photo = data.pop(1)
+        data = data[:1]+data[3:-2]
         pdf = FPDF()
-        pdf.
-        for i in detailsCard:
-            
-            print(i)
+        pdf.add_page()
+        pdf.set_font('Times', 'B', 18)
+        pdf.cell(0, 0, 'BIODATA', ln=True, align='C')
+        pdf.set_font('Times', '', 10)
+        pdf.multi_cell(0, 12,'The Lord God said, It is not good that the man should be alone; ''I will make him an help meet for him. - Genesis 2:18',align='C')
+        pdf.image(r'icons&Images\logo.png', x=47, y=17, w=22,h=22)
+        pdf.set_xy(70,25)
+        pdf.set_text_color(10,10,255)
+        pdf.add_font('Algerian','B',r'icons&Images\ALGERIA.ttf',uni=True)
+        pdf.set_font('Algerian','B',25)
+        pdf.cell(0,5,'TPM MATRIMONY',ln=True)
+        pdf.line(10, 39, 200, 39)
+        pdf.image(io.BytesIO(photo), x=3, y=43, w=80,h=100,type=imghdr.what(None, h=photo) or 'jpeg')
+        pdf.set_text_color(0,0,0)
+        pdf.set_xy(85,42)
+        pdf.set_font('Arial','',11)
+        updatedFields = ['Reg.No.']+fields
+        with pdf.table(width=120,col_widths=(40,90),align="L") as holderTable:
+            for i in range(len(data)):
+                currentRow = holderTable.row()
+                if i==0:headerStyle = FontFace(emphasis="ITALICS",color=(255,255,255),fill_color=(10, 10, 255))
+                else:headerStyle = FontFace(color=(0,0,0))
+                currentRow.cell(updatedFields[i],style=headerStyle);currentRow.cell(str(data[i]),style=headerStyle)
+        y = pdf.get_y()+2
+        pdf.line(10, y, 200, y)
+        pdf.write_html('<p align="center">Clarification on your biodata to any of these nos. <b>Bro. D. Annadoss</b> (Telegram no. 9884153831), <b>Bro. Sekar</b> (Telegram no. 9940408879) for TPM Matrimony.</p>')
+        pdfBytes = bytes(pdf.output(dest='S'))
+        ui.download(pdfBytes,filename=f'{data[1]}_biodata.pdf')
     def showCurrentDetails(i):
         detailsCard.clear()
+        detailsCard.data = i
         with detailsCard:
             ui.interactive_image(f"data:image/{imghdr.what(None,h=i[1]) or 'jpeg'};base64,{base64.b64encode(i[1]).decode()}").style('background-color: #fff; border-radius: 8px; height:300px; width:300px; object-fit:cover;')
             for x in i[4:-2]:ui.label(x).style('font-size: 20px; font-weight: bold; font-family: Times New Roman; color: #333')
@@ -282,7 +320,7 @@ def home(email:str):
         matchDataMaster.clear()
         dob,gender = data[6],data[7]
         async def search():
-            try:connection = mysql.connector.connect(host='127.0.0.1',user='root',password='Nikish@2003',database='pentecostMatrimony',ssl_disabled=True)
+            try:connection = mysql.connector.connect(host='127.0.0.1',user='root',password='Nikish@2003',database='pentecostMatrimony',ssl_disabled=False)
             except mysql.connector.Error as error:return None
             fieldValue = searchInput.value
             try:
@@ -296,7 +334,7 @@ def home(email:str):
             return result
         task = asyncio.create_task(search())
         task.add_done_callback(lambda x:refreshMaster(x.result()))
-    with ui.card().classes('p-4 bg-transparent shadow-none border border-gray-300').style('position: absolute; top:250px; left:400px; width:1060px; height:1500px; background-color: grey; backdrop-filter: blur(10px); border-radius: 8px; box-shadow: 0 4px 8px rgba(0, 0, 0, 0.5)'):matchDataMaster = ui.grid(columns=3).classes('gap-4')
+    with ui.card().classes('p-4 bg-transparent shadow-none border border-gray-300').style('position: absolute; top:250px; left:400px; width:1060px; height:500px; background-color: grey; backdrop-filter: blur(10px); border-radius: 8px; box-shadow: 0 4px 8px rgba(0, 0, 0, 0.5);overflow-y: auto;'):matchDataMaster = ui.grid(columns=3,).classes('gap-4')
     assignUsers()
     searchInput.on('keydown.enter',lambda x:assignUsers())
     searchInput.on('blur',lambda x:assignUsers())
@@ -306,6 +344,7 @@ def home(email:str):
         ui.button('back',on_click=lambda:userCardDetails.set_visibility(False))
         ui.button('Download',on_click=lambda:downloadPdf())
         detailsCard = ui.card().classes('w-[600px] h-[600px] bg-gray-100 rounded-lg shadow-lg p-4')
+        detailsCard.data = None
     userCardDetails.set_visibility(False)
 
 @ui.page('/')
