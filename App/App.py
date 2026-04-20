@@ -1,9 +1,6 @@
 from nicegui import ui,app,run
-import mysql.connector,base64,bcrypt,imghdr,smtplib,asyncio
-# from datetime import datetime
+import mysql.connector,base64,imghdr,asyncio
 from cryptography.fernet import Fernet
-# from email.mime.text import MIMEText
-# from email.mime.multipart import MIMEMultipart
 
 app.add_static_files('/icons','icons&Images')
 fields = ['Name','Profession','Date of birth','Gender','Qualification','Height','Income','Background','Marital Status','Languages Known',"Father's Name","Mother's Name", "Parent's Number",'Whatsapp Number','Family Status','Hometown','Current Resident Address','Siblings','Local Faith Home','Centre Faith Home','Expectations']
@@ -42,7 +39,7 @@ def checkUser(data,passwordEntry):
     if cipher.decrypt(validPassword.encode('utf-8')).decode()==passwordEntry:
         if role=='admin':ui.navigate.to('/admin')
         else:
-            if requestStatus=='Pending':ui.notification('Your request is pending approval.') # ;ui.navigate.to('/notification')
+            if requestStatus=='Pending':ui.notification('Your request is pending approval.')
             else:ui.navigate.to(f'/Home/{email}')
     else:ui.notification('Please enter the email and password correctly')
 
@@ -77,8 +74,7 @@ def form(textColor,bgColor,marginLeft,width='60%'):
             .dynamic-form .q-radio__label,
             .dynamic-form .q-option-group,
             .dynamic-form .q-select {{color: {textColor} !important;}}''')
-    
-    userForm = ui.card().classes('dynamic-form').style(f'background-color: {bgColor}; border-radius: 8px; box-shadow: 0 4px 8px rgba(0, 0, 0, 0.5); margin-top: 20px;width:{width};margin-left:{marginLeft}px')
+    userForm = ui.card().classes('dynamic-form').style(f'background-color: {bgColor}; height:550px; border-radius: 8px; box-shadow: 0 4px 8px rgba(0, 0, 0, 0.5); margin-top: 20px;width:{width};margin-left:{marginLeft}px;overflow-y: auto;')
     userForm.photo = None
     userForm.block = None
     with userForm:
@@ -123,25 +119,20 @@ def form(textColor,bgColor,marginLeft,width='60%'):
             formWidgets[key] = widget
         return formWidgets,userForm,avatarImage,email,password,chips
     
-@ui.page('/notification')
-def notify():
-    with ui.card():
-        ui.label('Dear user your request sent successfully.Kindly wait for the approval of your account.')
-        ui.button('Back',on_click=lambda:ui.navigate.to('/'))
-    
 @ui.page('/test')
 def test():
     ui.page_title('Test Page')
-    with ui.card():
+    with ui.card().style('width: 320px; height: 200px;'):
         def addSibling(i):
             with holderCard:
-                currentLabel = ui.label(i)
-                deleteButton = ui.button('Delete',on_click=lambda:[holderCard.remove(currentLabel),holderCard.remove(deleteButton)])
-        holderCard = ui.card().style('overflow-y: auto;')
+                row = ui.grid(columns=2).classes('gap-2 w-full')
+                with row:ui.label(i);ui.button('',icon='delete',on_click=lambda row=row:holderCard.remove(row)).classes('ml-auto')
+        holderCard = ui.card().style('width: 290px;height: 90px;overflow-y: auto;')
         with holderCard:pass
-        relationInput = ui.select(['Elder Brother','Elder Sister','Younger Brother','Younger Sister'],value='Elder Brother')
-        status = ui.checkbox('Married')
-        ui.button('Add',on_click=lambda:addSibling(relationInput.value+(' - Married' if status.value else ' - Single')))
+        with ui.grid(columns=2).classes('gap-2 w-full'):
+            relationInput = ui.select(['Elder Brother','Elder Sister','Younger Brother','Younger Sister'],value='Elder Brother')
+            status = ui.checkbox('Married')
+        ui.button('Add',icon='add',on_click=lambda:addSibling(relationInput.value+(' - Married' if status.value else ' - Single'))).style('display:block; margin: 0 auto;')
 
 @ui.page('/admin')
 def admin():
@@ -156,7 +147,6 @@ def admin():
             connection.commit()
             cursor.close();connection.close()
         except:print('database error')
-        
     def assignNewUser(i):
         currentUserMaster = ui.row().classes('w-full items-center gap-2')
         with currentUserMaster:
@@ -178,7 +168,6 @@ def admin():
             def updater():asyncio.create_task(update(i[2]));ui.notification(f'{i[2]} approved successfully!');removeUser()
             approve = ui.button('Approve',icon='check',on_click=updater).props('rounded outline color=green')
             reject = ui.button('Reject ',icon='clear',on_click=removeUser).props('rounded outline color=red')
-
     with ui.card().classes('w-full h-screen p-4').style('background-color: grey; border-radius: 8px; box-shadow: 0 4px 8px rgba(0, 0, 0, 0.5)'):
         ui.label('User Registration Request').classes('w-full text-center').style('font-size: 30px; font-weight: bold; font-family: Times New Roman; color: black')
         async def fetchRequest():
@@ -200,7 +189,7 @@ def admin():
 def personnelForm():
     ui.page_title('Register Form')
     ui.label('Registration Form').classes('text-center w-full').style('font-size: 28px; font-weight: bold; font-family: Times New Roman; color: #333')
-    widgets,userForm,avatar,email,password,chips = form('#333','#f9f9f9',200)
+    widgets,userForm,avatar,email,password,chips = form('#333','#f9f9f9',240)
     async def addData():
         def saveData():
             try:
@@ -220,10 +209,10 @@ def personnelForm():
         else:
             if userForm.block:ui.notification('This email is already registered. Please use a different email or login.',type='negative')
             else:await addData()
-    ui.button('Submit', on_click=handleSubmit)
+    ui.button('Submit', on_click=handleSubmit).style('display:block; margin: 0 auto;')
     
 @ui.page('/Home/{email}')
-def home(email:str):
+async def home(email:str):
     ui.page_title('Home Page')
     import random
     verses = {'Genesis 2:18':"The LORD God said, 'It is not good for the man to be alone. I will make a helper suitable for him'",'Mark 10:6-8':"‘made them male and female.For this reason a man will leave his father and mother and be united to his wife,and the two will become one flesh.’",
@@ -240,19 +229,20 @@ def home(email:str):
         verseLabel = ui.label().classes('text-center').style('font-size: 20px; font-style: italic; font-family: Times New Roman; color: #555')
         verse = ui.label().classes('text-center').style('font-size: 16px; font-family: Times New Roman; color: blue')
     ui.timer(5,showVerse)
-    def fetchData():
+    async def fetchData():
         connection = mysql.connector.connect(host='127.0.0.1',user='root',password='Nikish@2003',database='pentecostMatrimony',ssl_disabled=False)
         cursor = connection.cursor()
         cursor.execute('''select * from userData where email = %s''',(email,))
         data = cursor.fetchone()
         cursor.close();connection.close()
         return data
-    data = fetchData()
+    data = await fetchData()
     if data is None:ui.navigate.to('/');return
     ui.label(f'Welcome {data[4]}!').style('font-size: 24px; font-weight: bold; font-family: Times New Roman; color: #333')
     ui.button('Logout', on_click=lambda: ui.navigate.to('/')).props('color=red')
     searchInput,searchField = searchWithFields('400','150')
-    widgets,photo,avatar,emailWidget,password,chips = form('#f9f9f9','#000000',5,'25%')
+    widgets,userForm,avatar,emailWidget,password,chips = form('#f9f9f9','#000000',5,'27%')
+    userForm.photo = data[1]
     avatar.set_source(f"data:image/{imghdr.what(None, h=data[1]) or 'jpeg'};base64,{base64.b64encode(data[1]).decode()}")
     emailWidget.set_value(email)
     emailWidget.disable()
@@ -267,8 +257,22 @@ def home(email:str):
         else:widgets[i].set_value(data[index])
         index += 1
         if index in [7,8]:widgets[i].disable()
-    ui.button('Check',on_click=lambda:print(chips.lists))
-    def downloadPdf():
+    async def updateData():
+        def saveData():
+            try:
+                connection = mysql.connector.connect(host='127.0.0.1',user='root',password='Nikish@2003',database='pentecostMatrimony',ssl_disabled=False)
+                cursor = connection.cursor()
+                cursor.execute('''update userData set Photo=%s,Email=%s,Passwords=%s,Name=%s,Profession=%s,Dob=%s,Gender=%s,Qualification=%s,Height=%s,Income=%s,FamilyOrigin=%s,MaritalStatus=%s,Languages=%s,FatherName=%s,MotherName=%s,ParentsNumber=%s,WhatsAppTelegram=%s,Status=%s,Hometown=%s,CurrentAddress=%s,Siblings=%s,LocalFaithHome=%s,CenterFaithHome=%s,Expectations=%s,requestStatus=%s where Email=%s''',
+                            (userForm.photo,email,cipher.encrypt(password.value.encode()).decode('utf-8'))+tuple(widgets[x].value if x!='languagesKnown' else ','.join(chips.lists) for x in widgets)+('Approved',email))
+                connection.commit()
+                cursor.close();connection.close()
+            except mysql.connector.Error as e:print(e)
+        await run.io_bound(saveData)
+    async def handleSubmit():
+        if anyEmptyField(userForm,userForm.photo,chips.lists):ui.notification('Please fill all the fields')
+        else:await updateData();ui.notification('Details updated successfully!')
+    ui.button('Update',icon='edit',on_click=handleSubmit)
+    async def downloadPdf():
         from fpdf import FPDF,FontFace
         import io
         data = list(detailsCard.data)
@@ -304,16 +308,22 @@ def home(email:str):
         pdfBytes = bytes(pdf.output(dest='S'))
         ui.download(pdfBytes,filename=f'{data[1]}_biodata.pdf')
     def showCurrentDetails(i):
+        index = 0
         detailsCard.clear()
         detailsCard.data = i
         with detailsCard:
             ui.interactive_image(f"data:image/{imghdr.what(None,h=i[1]) or 'jpeg'};base64,{base64.b64encode(i[1]).decode()}").style('background-color: #fff; border-radius: 8px; height:300px; width:300px; object-fit:cover;')
-            for x in i[4:-2]:ui.label(x).style('font-size: 20px; font-weight: bold; font-family: Times New Roman; color: #333')
+            with ui.grid(columns=2).classes('gap-2 w-full'):
+                for x in i[4:-2]:
+                    ui.label(fields[index]).style('font-size: 20px; font-weight: bold; font-family: Times New Roman; color: #333')
+                    ui.label(x).style('font-size: 20px; font-weight: bold; font-family: Times New Roman; color: #333')
+                    index += 1
         userCardDetails.set_visibility(True)
+        overCoverCard.set_visibility(True)
     def refreshMaster(data):
         with matchDataMaster:
             for i in data:
-                currentUser = ui.card().classes('hover-card p-4').style('background-color: #fff; border-radius: 8px; box-shadow: 0 2px 4px rgba(0, 0, 0, 0.5); height:300px; width:300px; display:flex; flex-direction:column; align-items:center; justify-content:center; cursor:pointer;')
+                currentUser = ui.card().classes('hover-card p-4').style('background-color: #fff; border-radius: 8px; box-shadow: 0 2px 4px rgba(0, 0, 0, 0.5); height:330px; width:330px; display:flex; flex-direction:column; align-items:center; justify-content:center; cursor:pointer;')
                 with currentUser:ui.image(f"data:image/{imghdr.what(None,h=i[1]) or 'jpeg'};base64,{base64.b64encode(i[1]).decode()}").style('background-color: #fff; border-radius: 8px; height:300px; width:300px; object-fit:cover;')
                 currentUser.on('click',lambda i=i:showCurrentDetails(i))
     def assignUsers():
@@ -334,17 +344,20 @@ def home(email:str):
             return result
         task = asyncio.create_task(search())
         task.add_done_callback(lambda x:refreshMaster(x.result()))
-    with ui.card().classes('p-4 bg-transparent shadow-none border border-gray-300').style('position: absolute; top:250px; left:400px; width:1060px; height:500px; background-color: grey; backdrop-filter: blur(10px); border-radius: 8px; box-shadow: 0 4px 8px rgba(0, 0, 0, 0.5);overflow-y: auto;'):matchDataMaster = ui.grid(columns=3,).classes('gap-4')
+    with ui.card().classes('p-4 bg-transparent shadow-none border border-gray-300').style('position: absolute; top:250px; left:430px; width:1050px; height:600px; background-color: grey; backdrop-filter: blur(10px); border-radius: 8px; box-shadow: 0 4px 8px rgba(0, 0, 0, 0.5);overflow-y: auto;'):matchDataMaster = ui.grid(columns=3,).classes('gap-4')
     assignUsers()
     searchInput.on('keydown.enter',lambda x:assignUsers())
     searchInput.on('blur',lambda x:assignUsers())
-    userCardDetails = ui.card().style('position: absolute; top:250px; left:100px; width:1060px; height:1500px; background-color: grey; backdrop-filter: blur(10px); border-radius: 8px; box-shadow: 0 4px 8px rgba(0, 0, 0, 0.5); padding:20px; overflow-y:auto;')
+    overCoverCard = ui.card().classes('p-4 bg-transparent shadow-none border border-gray-300').style('position: absolute; top:0px; left:0px; width:100vw; height:130vh; margin:0; border-radius:0;background-color: white; backdrop-filter: blur(10px); border-radius: 8px; box-shadow: 0 4px 8px rgba(0, 0, 0, 0.5); padding:20px;')
+    userCardDetails = ui.card().style('position: absolute; top:120px; left:50px; width:1000px; height:780px; background-color: grey; backdrop-filter: blur(10px); border-radius: 8px; box-shadow: 0 4px 8px rgba(0, 0, 0, 0.5); padding:20px;')
     with userCardDetails:
         ui.label('User Details').classes('text-center').style('font-size: 24px; font-weight: bold; font-family: Times New Roman; color: #333')
-        ui.button('back',on_click=lambda:userCardDetails.set_visibility(False))
-        ui.button('Download',on_click=lambda:downloadPdf())
-        detailsCard = ui.card().classes('w-[600px] h-[600px] bg-gray-100 rounded-lg shadow-lg p-4')
+        with ui.row().classes('gap-4'):
+            ui.button('back',on_click=lambda:[userCardDetails.set_visibility(False),overCoverCard.set_visibility(False)])
+            ui.button('Download',on_click=lambda:downloadPdf())
+        detailsCard = ui.card().classes('w-[700px] h-[600px] bg-gray-100 rounded-lg shadow-lg p-4').style('overflow-y:auto;')
         detailsCard.data = None
+    overCoverCard.set_visibility(False)
     userCardDetails.set_visibility(False)
 
 @ui.page('/')

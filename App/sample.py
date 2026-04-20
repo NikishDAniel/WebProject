@@ -27,3 +27,17 @@
 # pdf.line(10, y, 200, y)
 # pdf.write_html('<p align="center">Clarification on your biodata to any of these nos. <b>Bro. D. Annadoss</b> (Telegram no. 9884153831), <b>Bro. Sekar</b> (Telegram no. 9940408879) for TPM Matrimony.</p>')
 # pdf.output('biodata.pdf')
+
+
+nums = [5,0,1,4];k = 3
+result = index = 0
+maximum = nums[0]
+minimum = min(nums)
+minimalDifference = None
+for i in nums:
+    if i>maximum:maximum = i
+    calculatedDifference = maximum-minimum
+    if minimalDifference==None or (calculatedDifference<=k and minimalDifference<calculatedDifference):result = index;minimalDifference = calculatedDifference
+    if i==minimum:minimum = min(nums[index+1:])
+    index+=1
+print(result)
