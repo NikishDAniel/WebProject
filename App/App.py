@@ -238,7 +238,7 @@ async def home(email:str):
         return data
     data = await fetchData()
     if data is None:ui.navigate.to('/');return
-    ui.label(f'Welcome {data[4]}!').style('font-size: 24px; font-weight: bold; font-family: Times New Roman; color: #333')
+    ui.label(f'Welcome {data[4]}!').style('font-size: 26px; font-weight: bold; font-family: Times New Roman; color: #333')
     ui.button('Logout', on_click=lambda: ui.navigate.to('/')).props('color=red')
     searchInput,searchField = searchWithFields('400','150')
     widgets,userForm,avatar,emailWidget,password,chips = form('#f9f9f9','#000000',5,'27%')
