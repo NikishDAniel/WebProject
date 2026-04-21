@@ -349,13 +349,13 @@ async def home(email:str):
     searchInput.on('keydown.enter',lambda x:assignUsers())
     searchInput.on('blur',lambda x:assignUsers())
     overCoverCard = ui.card().classes('p-4 bg-transparent shadow-none border border-gray-300').style('position: absolute; top:0px; left:0px; width:100vw; height:130vh; margin:0; border-radius:0;background-color: white; backdrop-filter: blur(10px); border-radius: 8px; box-shadow: 0 4px 8px rgba(0, 0, 0, 0.5); padding:20px;')
-    userCardDetails = ui.card().style('position: absolute; top:120px; left:50px; width:1000px; height:780px; background-color: grey; backdrop-filter: blur(10px); border-radius: 8px; box-shadow: 0 4px 8px rgba(0, 0, 0, 0.5); padding:20px;')
+    userCardDetails = ui.card().style('position: absolute; top:20px; left:120px; width:1000px; height:780px; background-color: grey; backdrop-filter: blur(10px); border-radius: 8px; box-shadow: 0 4px 8px rgba(0, 0, 0, 0.5); padding:20px;')
     with userCardDetails:
-        ui.label('User Details').classes('text-center').style('font-size: 24px; font-weight: bold; font-family: Times New Roman; color: #333')
+        ui.label('User Details').classes('w-full text-center').style('font-size: 28px; font-weight: bold; font-family: Times New Roman; color: white')
         with ui.row().classes('gap-4'):
-            ui.button('back',on_click=lambda:[userCardDetails.set_visibility(False),overCoverCard.set_visibility(False)])
-            ui.button('Download',on_click=lambda:downloadPdf())
-        detailsCard = ui.card().classes('w-[700px] h-[600px] bg-gray-100 rounded-lg shadow-lg p-4').style('overflow-y:auto;')
+            ui.button('back',icon='arrow_back',on_click=lambda:[userCardDetails.set_visibility(False),overCoverCard.set_visibility(False)])
+            ui.button('Download',icon='download',on_click=lambda:downloadPdf())
+        detailsCard = ui.card().classes('w-[720px] h-[720px] bg-gray-100 rounded-lg shadow-lg p-4').style('overflow-y:auto;')
         detailsCard.data = None
     overCoverCard.set_visibility(False)
     userCardDetails.set_visibility(False)
