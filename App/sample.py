@@ -29,15 +29,6 @@
 # pdf.output('biodata.pdf')
 
 
-nums = [5,0,1,4];k = 3
-result = index = 0
-maximum = nums[0]
-minimum = min(nums)
-minimalDifference = None
-for i in nums:
-    if i>maximum:maximum = i
-    calculatedDifference = maximum-minimum
-    if minimalDifference==None or (calculatedDifference<=k and minimalDifference<calculatedDifference):result = index;minimalDifference = calculatedDifference
-    if i==minimum:minimum = min(nums[index+1:])
-    index+=1
-print(result)
+import mysql.connector
+
+connection = mysql.connector.connect(host='127.0.0.1',user='appuser',password='password',database='pentecostMatrimony')
