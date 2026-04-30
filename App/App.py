@@ -164,14 +164,21 @@ def admin():
             def updater():asyncio.create_task(update(i[2]));ui.notification(f'{i[2]} approved successfully!');removeUser()
             approve = ui.button('Approve',icon='check',on_click=updater).props('rounded outline color=green')
             reject = ui.button('Reject ',icon='clear',on_click=removeUser).props('rounded outline color=red')
-    async def refresh(type):
-        requestScrollable.types = type
+    async def refreshDataMaster(type,databaseFilter=''):
+        try:
+            connection = mysql.connector.connect(host='127.0.0.1',user='root',password='Nikish@2003',database='pentecostmatrimony')
+            cursor = connection.cursor()
+            cursor.execute('select * from userData where requestStatus = %s',(databaseFilter,))
+            Data = cursor.fetchall()
+            cursor.close()          
+            connection.close()
+        except:Data = []
     with ui.row().classes('w-full h-20 items-center'):
         with ui.button(icon='menu'):
             with ui.menu():
-                ui.menu_item('All Data', on_click=lambda: asyncio.create_task(refresh('All Data'))).props('icon=home')
-                ui.menu_item('New Request Data', on_click=lambda: asyncio.create_task(refresh('New Request Data'))).props('icon=back')
-                ui.menu_item('Rejected Request Data', on_click=lambda: asyncio.create_task(refresh('Rejected Request Data'))).props('icon=menu')
+                ui.menu_item('All Data', on_click=lambda: asyncio.create_task(refreshDataMaster('All Data'))).props('icon=home')
+                ui.menu_item('New Request Data', on_click=lambda: asyncio.create_task(refreshDataMaster('New Request Data','Pending'))).props('icon=back')
+                ui.menu_item('Rejected Request Data', on_click=lambda: asyncio.create_task(refreshDataMaster('Rejected Request Data','Rejected'))).props('icon=menu')
                 ui.menu_item('Admin Operation',)
                 ui.menu_item('Married Data',)
         searchWithFields()
@@ -190,7 +197,6 @@ def admin():
             with requestScrollable:
                 for i in pendingData:assignNewUser(i)
         requestScrollable = ui.card().classes('w-full h-full').style('max-height:100vh; overflow-y:auto;')
-        requestScrollable.types = 'All Data'
         asyncio.create_task(fetchRequest())
 
 @ui.page('/register')
@@ -233,8 +239,10 @@ async def home(email:str):
     versesList = list(verses.keys())
     def showVerse():currentVerse = random.choice(versesList);verseLabel.set_text(verses[currentVerse]);verse.set_text(currentVerse)
     with verseCard:
-        verseLabel = ui.label().classes('text-center').style('font-size: 20px; font-style: italic; font-family: Times New Roman; color: #555')
-        verse = ui.label().classes('text-center').style('font-size: 16px; font-family: Times New Roman; color: blue')
+        with ui.row().classes('w-full items-center'):
+            verseLabel = ui.label().classes('text-center').style('font-size: 18px; font-style: italic; font-family: Times New Roman; color: black')
+            verse = ui.label().classes('text-center').style('font-size: 16px; font-family: Times New Roman; color: blue')
+    showVerse()
     ui.timer(5,showVerse)
     async def fetchData():
         connection = mysql.connector.connect(host='127.0.0.1',user='root',password='Nikish@2003',database='pentecostmatrimony')
@@ -247,7 +255,7 @@ async def home(email:str):
     if data is None:ui.navigate.to('/');return
     #ui.label(f'Welcome {data[4]}!').style('font-size: 24px; font-weight: bold; font-family: Times New Roman; color: #333')
     with ui.row().classes('w-full h-20 items-center'):ui.button('Logout', on_click=lambda: ui.navigate.to('/')).props('color=red');searchInput,searchField = searchWithFields()
-    widgets,userForm,avatar,emailWidget,password,chips = form('#f9f9f9','#000000','35')
+    widgets,userForm,avatar,emailWidget,password,chips = form('#f9f9f9','#000000','55')
     userForm.photo = data[1]
     avatar.set_source(f"data:image/{filetype.guess(data[1]).mime or 'jpeg'};base64,{base64.b64encode(data[1]).decode()}")
     emailWidget.set_value(email)
