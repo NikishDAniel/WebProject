@@ -389,4 +389,4 @@ def login():
             ui.link('Register',target='/register')
     ui.button('Try',on_click=lambda:ui.navigate.to('/test'))
 
-ui.run(host='0.0.0.0', port=80)       # page - http://127.0.0.1:8080/
+ui.run(host='0.0.0.0', port=80)
