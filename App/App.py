@@ -11,14 +11,14 @@ def anyEmptyField(userForm,photo,languages):
     if not photo or not languages:return 1
     index = 0
     for widget in userForm:
-        if index!=13 and widget.__class__.__name__ in ['Input','DateInput','Radio','Select','Textarea'] and widget.value in [None,'']:print(widget);widget.run_method('focus');widget.style('border:2px solid red');return 1
+        if index!=13 and widget.__class__.__name__ in ['Input','DateInput','Radio','Select','Textarea'] and widget.value in [None,'']:widget.run_method('focus');widget.style('border:2px solid red');return 1
         else:widget.style('border:2px white')
         index += 1
 
 async def emailValidation(email='',check=0):
     container = ui.column()
     def fetchData():
-        try:connection = mysql.connector.connect(host='127.0.0.1',user='appusers',password='password',database='pentecostmatrimony')
+        try:connection = mysql.connector.connect(host='127.0.0.1',user='root',password='Nikish@2003',database='pentecostmatrimony')
         except mysql.connector.Error as error:
             with container:ui.notification(f'Database error: {str(error)}',type='negative')
             return None
@@ -51,7 +51,7 @@ ui.add_head_html('''
                 </style>''',shared=1)
 
 def searchWithFields():
-    with ui.card().classes('text-center').style(f'background-color: #f0f0f0; border-radius: 8px; box-shadow: 0 4px 8px rgba(0, 0, 0, 0.5);'):
+    with ui.card().classes('w-fit p-2 h-18 mx-auto').style(f'background-color: #f0f0f0; border-radius: 8px; box-shadow: 0 4px 8px rgba(0, 0, 0, 0.5);'):
         with ui.row().classes('items-center gap-2'):
             searchInput = ui.input(label='Search by Email').style('width:350px')
             with searchInput.add_slot('prepend'):ui.icon('search').classes('text-2xl text-gray-500')
@@ -59,10 +59,8 @@ def searchWithFields():
             searchField = ui.select(options=['Email']+fields,value='Email',on_change=lambda:searchInput.set_label('Search by '+searchField.value)).style('width:200px')
     return searchInput,searchField
 
-def form(textColor,bgColor,marginLeft,width='60%'):
-    ui.add_head_html(f'''<style>
-        .avatar-container:hover .camera-icon {{background: {textColor} !important;color: {bgColor} !important;}}
-        </style>''')
+def form(textColor,bgColor,width='60'):
+    ui.add_head_html(f'''<style>.avatar-container:hover .camera-icon {{background: {textColor} !important;color: {bgColor} !important;}}</style>''')
     ui.add_css(f'''
             .dynamic-form .q-field__label {{color: {textColor} !important;}}
             .dynamic-form .q-field__native {{color: {textColor} !important;}}
@@ -74,7 +72,7 @@ def form(textColor,bgColor,marginLeft,width='60%'):
             .dynamic-form .q-radio__label,
             .dynamic-form .q-option-group,
             .dynamic-form .q-select {{color: {textColor} !important;}}''')
-    userForm = ui.card().classes('dynamic-form').style(f'background-color: {bgColor}; height:550px; border-radius: 8px; box-shadow: 0 4px 8px rgba(0, 0, 0, 0.5); margin-top: 20px;width:{width};margin-left:{marginLeft}px;overflow-y: auto;')
+    userForm = ui.card().classes(f'dynamic-form w-{width} h-screen text-center').style(f'background-color: {bgColor}; border-radius: 8px; box-shadow: 0 4px 8px rgba(0, 0, 0, 0.5); overflow-y: auto;')
     userForm.photo = None
     userForm.block = None
     with userForm:
@@ -137,11 +135,9 @@ def test():
 @ui.page('/admin')
 def admin():
     ui.page_title('Admin')
-    ui.add_css('''.scrollable::-webkit-scrollbar {width: 6px;}
-                  .scrollable::-webkit-scrollbar-thumb {background: gray;border-radius: 10px;}''')
-    async def update(email,value='Approved'):
+    async def update(email):
         try:
-            connection = mysql.connector.connect(host='127.0.0.1',user='appusers',password='password',database='pentecostmatrimony')
+            connection = mysql.connector.connect(host='127.0.0.1',user='root',password='Nikish@2003',database='pentecostmatrimony')
             cursor = connection.cursor()
             cursor.execute('''update userData set requestStatus = %s where email = %s''',(value,email))
             connection.commit()
@@ -178,25 +174,30 @@ def admin():
             def updater():asyncio.create_task(update(i[2]));ui.notification(f'{i[2]} approved successfully!');removeUser()
             approve = ui.button('Approve',icon='check',on_click=updater).props('rounded outline color=green')
             reject = ui.button('Reject ',icon='clear',on_click=removeUser).props('rounded outline color=red')
-    def refreshMaster(data):
-        requestScrollable.clear()
-        for i in data:assignNewUser(i)
-    with ui.row().classes('items-center gap-2'):
+    async def refreshDataMaster(type,databaseFilter=''):
+        try:
+            connection = mysql.connector.connect(host='127.0.0.1',user='root',password='Nikish@2003',database='pentecostmatrimony')
+            cursor = connection.cursor()
+            cursor.execute('select * from userData where requestStatus = %s',(databaseFilter,))
+            Data = cursor.fetchall()
+            cursor.close()          
+            connection.close()
+        except:Data = []
+    with ui.row().classes('w-full h-20 items-center'):
         with ui.button(icon='menu'):
-            with ui.menu().props('auto-close'):
-                ui.menu_item('All Data',on_click=None)
-                ui.menu_item('Pending Requests',on_click=None)
-                ui.menu_item('Rejected Request',on_click=None)
-        searchInput,searchField = searchWithFields()
-        # searchInput.on('keydown.enter',lambda x:assignUsers())
-        # searchInput.on('blur',lambda x:assignUsers())
-    registration = ui.card().classes('w-full h-screen p-4').style('background-color: grey; border-radius: 8px; box-shadow: 0 4px 8px rgba(0, 0, 0, 0.5)')
-    with registration:
+            with ui.menu():
+                ui.menu_item('All Data', on_click=lambda: asyncio.create_task(refreshDataMaster('All Data'))).props('icon=home')
+                ui.menu_item('New Request Data', on_click=lambda: asyncio.create_task(refreshDataMaster('New Request Data','Pending'))).props('icon=back')
+                ui.menu_item('Rejected Request Data', on_click=lambda: asyncio.create_task(refreshDataMaster('Rejected Request Data','Rejected'))).props('icon=menu')
+                ui.menu_item('Admin Operation',)
+                ui.menu_item('Married Data',)
+        searchWithFields()
+    with ui.card().classes('w-full h-screen p-4').style('background-color: grey; border-radius: 8px; box-shadow: 0 4px 8px rgba(0, 0, 0, 0.5)'):
         ui.label('User Registration Request').classes('w-full text-center').style('font-size: 30px; font-weight: bold; font-family: Times New Roman; color: black')
         async def fetchRequest(all=0):
             requestScrollable.clear()
             try:
-                connection = mysql.connector.connect(host='127.0.0.1',user='appusers',password='password',database='pentecostmatrimony')
+                connection = mysql.connector.connect(host='127.0.0.1',user='root',password='Nikish@2003',database='pentecostmatrimony')
                 cursor = connection.cursor()
                 if all:cursor.execute('select * from userData')
                 else:cursor.execute('select * from userData where requestStatus = %s',("Pending",))
@@ -206,7 +207,7 @@ def admin():
             except:pendingData = []
             with requestScrollable:
                 for i in pendingData:assignNewUser(i)
-        requestScrollable = ui.card().classes('w-full h-full scrollable').style('max-height:100vh; overflow-y:auto;')
+        requestScrollable = ui.card().classes('w-full h-full').style('max-height:100vh; overflow-y:auto;')
         asyncio.create_task(fetchRequest())
 
 @ui.page('/register')
@@ -217,7 +218,7 @@ def personnelForm():
     async def addData():
         def saveData():
             try:
-                connection = mysql.connector.connect(host='127.0.0.1',user='appusers',password='password',database='pentecostmatrimony')
+                connection = mysql.connector.connect(host='127.0.0.1',user='root',password='Nikish@2003',database='pentecostmatrimony')
                 cursor = connection.cursor()
                 cursor.execute('''insert into userData(Photo,Email,Passwords,Name,Profession,Dob,Gender,Qualification,Height,Income,FamilyOrigin,MaritalStatus,Languages,FatherName,MotherName,ParentsNumber,WhatsAppTelegram,Status,Hometown,CurrentAddress,Siblings,LocalFaithHome,CenterFaithHome,Expectations,requestStatus) VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)''',
                             (userForm.photo,email.value,cipher.encrypt(password.value.encode()).decode('utf-8'))+tuple(widgets[x].value if x!='languagesKnown' else ','.join(chips.lists) for x in widgets)+('Pending',))
@@ -237,12 +238,11 @@ def personnelForm():
     
 @ui.page('/Home/{email}')
 async def home(email:str):
-    ui.page_title('Home Page')
+    ui.page_title('Pentacost Matrimony')
     import random
     verses = {'Genesis 2:18':"The LORD God said, 'It is not good for the man to be alone. I will make a helper suitable for him'",'Mark 10:6-8':"‘made them male and female.For this reason a man will leave his father and mother and be united to his wife,and the two will become one flesh.’",
               'Matthew 19:6':"Therefore what God has joined together, let no one separate.",'Proverbs 5:18':"“He who finds a wife finds what is good and receives favor from the Lord.”",'Proverbs 31:10':"“A wife of noble character who can find? She is worth far more than rubies.”",
               'Ephesians 4:32':"Be kind and compassionate to one another, forgiving each other, just as in Christ God forgave you.",'Colossians 3:14':"And over all these virtues put on love, which binds them all together in perfect unity.",'Colossians 3:19':"Husbands, love your wives and do not be harsh with them.",}
-    ui.page_title('Pentacost Matrimony')
     ui.add_css("""body {background-image: url("/icons/userbg.png");background-size: cover;background-position:top center;background-repeat: no-repeat;height: 100vh;}
                .hover-card {transition: all 0.3s ease;}
                .hover-card:hover {transform: scale(1.03);box-shadow: 0 10px 25px rgba(0,0,0,0.2);}""")
@@ -250,11 +250,13 @@ async def home(email:str):
     versesList = list(verses.keys())
     def showVerse():currentVerse = random.choice(versesList);verseLabel.set_text(verses[currentVerse]);verse.set_text(currentVerse)
     with verseCard:
-        verseLabel = ui.label().classes('text-center').style('font-size: 20px; font-style: italic; font-family: Times New Roman; color: #555')
-        verse = ui.label().classes('text-center').style('font-size: 16px; font-family: Times New Roman; color: blue')
+        with ui.row().classes('w-full items-center'):
+            verseLabel = ui.label().classes('text-center').style('font-size: 18px; font-style: italic; font-family: Times New Roman; color: black')
+            verse = ui.label().classes('text-center').style('font-size: 16px; font-family: Times New Roman; color: blue')
+    showVerse()
     ui.timer(5,showVerse)
     async def fetchData():
-        connection = mysql.connector.connect(host='127.0.0.1',user='appusers',password='password',database='pentecostmatrimony')
+        connection = mysql.connector.connect(host='127.0.0.1',user='root',password='Nikish@2003',database='pentecostmatrimony')
         cursor = connection.cursor()
         cursor.execute('''select * from userData where email = %s''',(email,))
         data = cursor.fetchone()
@@ -262,10 +264,9 @@ async def home(email:str):
         return data
     data = await fetchData()
     if data is None:ui.navigate.to('/');return
-    ui.label(f'Welcome {data[4]}!').style('font-size: 26px; font-weight: bold; font-family: Times New Roman; color: #333')
-    ui.button('Logout', on_click=lambda: ui.navigate.to('/')).props('color=red')
-    searchInput,searchField = searchWithFields()
-    widgets,userForm,avatar,emailWidget,password,chips = form('#f9f9f9','#000000',5,'27%')
+    #ui.label(f'Welcome {data[4]}!').style('font-size: 24px; font-weight: bold; font-family: Times New Roman; color: #333')
+    with ui.row().classes('w-full h-20 items-center'):ui.button('Logout', on_click=lambda: ui.navigate.to('/')).props('color=red');searchInput,searchField = searchWithFields()
+    widgets,userForm,avatar,emailWidget,password,chips = form('#f9f9f9','#000000','55')
     userForm.photo = data[1]
     avatar.set_source(f"data:image/{filetype.guess(data[1]).mime or 'jpeg'};base64,{base64.b64encode(data[1]).decode()}")
     emailWidget.set_value(email)
@@ -284,7 +285,7 @@ async def home(email:str):
     async def updateData():
         def saveData():
             try:
-                connection = mysql.connector.connect(host='127.0.0.1',user='appusers',password='password',database='pentecostmatrimony')
+                connection = mysql.connector.connect(host='127.0.0.1',user='root',password='Nikish@2003',database='pentecostmatrimony')
                 cursor = connection.cursor()
                 cursor.execute('''update userData set Photo=%s,Email=%s,Passwords=%s,Name=%s,Profession=%s,Dob=%s,Gender=%s,Qualification=%s,Height=%s,Income=%s,FamilyOrigin=%s,MaritalStatus=%s,Languages=%s,FatherName=%s,MotherName=%s,ParentsNumber=%s,WhatsAppTelegram=%s,Status=%s,Hometown=%s,CurrentAddress=%s,Siblings=%s,LocalFaithHome=%s,CenterFaithHome=%s,Expectations=%s,requestStatus=%s where Email=%s''',
                             (userForm.photo,email,cipher.encrypt(password.value.encode()).decode('utf-8'))+tuple(widgets[x].value if x!='languagesKnown' else ','.join(chips.lists) for x in widgets)+('Approved',email))
@@ -354,7 +355,7 @@ async def home(email:str):
         matchDataMaster.clear()
         dob,gender = data[6],data[7]
         async def search():
-            try:connection = mysql.connector.connect(host='127.0.0.1',user='appusers',password='password',database='pentecostmatrimony')
+            try:connection = mysql.connector.connect(host='127.0.0.1',user='root',password='Nikish@2003',database='pentecostmatrimony')
             except mysql.connector.Error as error:return None
             fieldValue = searchInput.value
             try:
@@ -407,4 +408,4 @@ def login():
             ui.link('Register',target='/register')
     ui.button('Try',on_click=lambda:ui.navigate.to('/test'))
 
-ui.run(host='0.0.0.0', port=80)       # page - http://127.0.0.1:8080/
+ui.run(host='0.0.0.0', port=80)
