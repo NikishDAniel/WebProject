@@ -50,8 +50,8 @@ ui.add_head_html('''
                 .algerian-text {font-family: AlgerianCustom;}
                 </style>''',shared=1)
 
-def searchWithFields(positionX=0,positionY=0):
-    with ui.card().classes('w-fit p-2').style(f'position:absolute; left:{positionX}px; top:{positionY}px; background-color: #f0f0f0; border-radius: 8px; box-shadow: 0 4px 8px rgba(0, 0, 0, 0.5);'):
+def searchWithFields():
+    with ui.card().classes('text-center').style(f'background-color: #f0f0f0; border-radius: 8px; box-shadow: 0 4px 8px rgba(0, 0, 0, 0.5);'):
         with ui.row().classes('items-center gap-2'):
             searchInput = ui.input(label='Search by Email').style('width:350px')
             with searchInput.add_slot('prepend'):ui.icon('search').classes('text-2xl text-gray-500')
@@ -139,14 +139,24 @@ def admin():
     ui.page_title('Admin')
     ui.add_css('''.scrollable::-webkit-scrollbar {width: 6px;}
                   .scrollable::-webkit-scrollbar-thumb {background: gray;border-radius: 10px;}''')
-    async def update(email):
+    async def update(email,value='Approved'):
         try:
             connection = mysql.connector.connect(host='127.0.0.1',user='appusers',password='password',database='pentecostmatrimony')
             cursor = connection.cursor()
-            cursor.execute('''update userData set requestStatus = %s where email = %s''',('Approved',email))
+            cursor.execute('''update userData set requestStatus = %s where email = %s''',(value,email))
             connection.commit()
             cursor.close();connection.close()
         except:print('database error')
+    async def fetchRequiredData(all=0,condition=None,value=None):
+        try:
+            connection = mysql.connector.connect(host='127.0.0.1',user='appusers',password='password',database='pentecostmatrimony')
+            cursor = connection.cursor()
+            if all:cursor.execute('select * from userData')
+            else:cursor.execute(f'''select * from userData where {condition} = %s''',(value,))
+            connection.commit()
+            cursor.close();connection.close()
+            refreshMaster(cursor.fetchall())
+        except:ui.notification('Database error',type='negative')
     def assignNewUser(i):
         currentUserMaster = ui.row().classes('w-full items-center gap-2')
         with currentUserMaster:
@@ -164,20 +174,34 @@ def admin():
                 with details:
                     index = 0
                     for data in i[4:-2]:ui.label(fields[index]).style('font-size: 20px; font-weight: bold; font-family: Times New Roman');ui.label(data).classes('break-words').style('font-size: 20px; font-family: Times New Roman');index += 1
-            def removeUser():currentUserMaster.remove(currentUserCard);currentUserMaster.remove(approve);currentUserMaster.remove(reject)
+            def removeUser():asyncio.create_task(update(i[2],'Rejected'));currentUserMaster.remove(currentUserCard);currentUserMaster.remove(approve);currentUserMaster.remove(reject)
             def updater():asyncio.create_task(update(i[2]));ui.notification(f'{i[2]} approved successfully!');removeUser()
             approve = ui.button('Approve',icon='check',on_click=updater).props('rounded outline color=green')
             reject = ui.button('Reject ',icon='clear',on_click=removeUser).props('rounded outline color=red')
-    with ui.card().classes('w-full h-screen p-4').style('background-color: grey; border-radius: 8px; box-shadow: 0 4px 8px rgba(0, 0, 0, 0.5)'):
+    def refreshMaster(data):
+        requestScrollable.clear()
+        for i in data:assignNewUser(i)
+    with ui.row().classes('items-center gap-2'):
+        with ui.button(icon='menu'):
+            with ui.menu().props('auto-close'):
+                ui.menu_item('All Data',on_click=None)
+                ui.menu_item('Pending Requests',on_click=None)
+                ui.menu_item('Rejected Request',on_click=None)
+        searchInput,searchField = searchWithFields()
+        # searchInput.on('keydown.enter',lambda x:assignUsers())
+        # searchInput.on('blur',lambda x:assignUsers())
+    registration = ui.card().classes('w-full h-screen p-4').style('background-color: grey; border-radius: 8px; box-shadow: 0 4px 8px rgba(0, 0, 0, 0.5)')
+    with registration:
         ui.label('User Registration Request').classes('w-full text-center').style('font-size: 30px; font-weight: bold; font-family: Times New Roman; color: black')
-        async def fetchRequest():
+        async def fetchRequest(all=0):
             requestScrollable.clear()
             try:
                 connection = mysql.connector.connect(host='127.0.0.1',user='appusers',password='password',database='pentecostmatrimony')
                 cursor = connection.cursor()
-                cursor.execute('select * from userData where requestStatus = %s',("Pending",))
+                if all:cursor.execute('select * from userData')
+                else:cursor.execute('select * from userData where requestStatus = %s',("Pending",))
                 pendingData = cursor.fetchall()
-                cursor.close()          
+                cursor.close()        
                 connection.close()
             except:pendingData = []
             with requestScrollable:
@@ -238,9 +262,9 @@ async def home(email:str):
         return data
     data = await fetchData()
     if data is None:ui.navigate.to('/');return
-    ui.label(f'Welcome {data[4]}!').style('font-size: 24px; font-weight: bold; font-family: Times New Roman; color: #333')
+    ui.label(f'Welcome {data[4]}!').style('font-size: 26px; font-weight: bold; font-family: Times New Roman; color: #333')
     ui.button('Logout', on_click=lambda: ui.navigate.to('/')).props('color=red')
-    searchInput,searchField = searchWithFields('400','150')
+    searchInput,searchField = searchWithFields()
     widgets,userForm,avatar,emailWidget,password,chips = form('#f9f9f9','#000000',5,'27%')
     userForm.photo = data[1]
     avatar.set_source(f"data:image/{filetype.guess(data[1]).mime or 'jpeg'};base64,{base64.b64encode(data[1]).decode()}")
