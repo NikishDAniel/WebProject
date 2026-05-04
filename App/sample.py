@@ -29,6 +29,24 @@
 # pdf.output('biodata.pdf')
 
 
-import mysql.connector
-
-connection = mysql.connector.connect(host='127.0.0.1',user='appuser',password='password',database='pentecostMatrimony')
+from collections import defaultdict
+data = defaultdict(int)
+s = "leetcode"
+order = []
+for i in s:
+    if i in 'aeiou':
+        data[i] += 1
+        if i not in order:order.append(i)
+sortedList = sorted(data,key=lambda x:data[x])[::-1]
+result = ''
+for i in s:
+    if i in 'aeiou':
+        if len(sortedList)>1:
+            first , second = sortedList[:2]
+            if data[first]==data[second]:
+                if first in order[order.index(second):]:i=second
+                else:i=first
+        data[i] -= 1
+        if data[i]==0:sortedList = sortedList[1:]
+    result += i
+print(result)

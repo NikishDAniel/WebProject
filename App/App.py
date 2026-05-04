@@ -135,7 +135,7 @@ def test():
 @ui.page('/admin')
 def admin():
     ui.page_title('Admin')
-    async def update(email):
+    async def update(email,value):
         try:
             connection = mysql.connector.connect(host='127.0.0.1',user='root',password='Nikish@2003',database='pentecostmatrimony')
             cursor = connection.cursor()
@@ -145,7 +145,7 @@ def admin():
         except:print('database error')
     async def fetchRequiredData(all=0,condition=None,value=None):
         try:
-            connection = mysql.connector.connect(host='127.0.0.1',user='appusers',password='password',database='pentecostmatrimony')
+            connection = mysql.connector.connect(host='127.0.0.1',user='root',password='Nikish@2003',database='pentecostmatrimony')
             cursor = connection.cursor()
             if all:cursor.execute('select * from userData')
             else:cursor.execute(f'''select * from userData where {condition} = %s''',(value,))
@@ -171,44 +171,43 @@ def admin():
                     index = 0
                     for data in i[4:-2]:ui.label(fields[index]).style('font-size: 20px; font-weight: bold; font-family: Times New Roman');ui.label(data).classes('break-words').style('font-size: 20px; font-family: Times New Roman');index += 1
             def removeUser():asyncio.create_task(update(i[2],'Rejected'));currentUserMaster.remove(currentUserCard);currentUserMaster.remove(approve);currentUserMaster.remove(reject)
-            def updater():asyncio.create_task(update(i[2]));ui.notification(f'{i[2]} approved successfully!');removeUser()
+            def updater():
+                asyncio.create_task(update(i[2],'Approved'));ui.notification(f'{i[2]} approved successfully!');currentUserMaster.remove(currentUserCard);currentUserMaster.remove(approve)
+                if masterLabel.text=='Pending Request Data':currentUserMaster.remove(reject)
             approve = ui.button('Approve',icon='check',on_click=updater).props('rounded outline color=green')
-            reject = ui.button('Reject ',icon='clear',on_click=removeUser).props('rounded outline color=red')
+            if masterLabel.text=='Pending Request Data':reject = ui.button('Reject ',icon='clear',on_click=removeUser).props('rounded outline color=red')
+    def allDataRefresh(i):
+        print(i[3:])
     async def refreshDataMaster(type,databaseFilter=''):
         try:
             connection = mysql.connector.connect(host='127.0.0.1',user='root',password='Nikish@2003',database='pentecostmatrimony')
             cursor = connection.cursor()
-            cursor.execute('select * from userData where requestStatus = %s',(databaseFilter,))
+            if type=='All Data':cursor.execute('select * from userData')
+            else:cursor.execute('select * from userData where requestStatus = %s',(databaseFilter,))
             Data = cursor.fetchall()
             cursor.close()          
             connection.close()
         except:Data = []
+        masterLabel.set_text(type)
+        requestScrollable.clear()
+        with requestScrollable:
+            if type=='All Data':
+                for i in Data:allDataRefresh(i)
+            else:
+                for i in Data:assignNewUser(i)
     with ui.row().classes('w-full h-20 items-center'):
         with ui.button(icon='menu'):
             with ui.menu():
                 ui.menu_item('All Data', on_click=lambda: asyncio.create_task(refreshDataMaster('All Data'))).props('icon=home')
-                ui.menu_item('New Request Data', on_click=lambda: asyncio.create_task(refreshDataMaster('New Request Data','Pending'))).props('icon=back')
+                ui.menu_item('Pending Request Data', on_click=lambda: asyncio.create_task(refreshDataMaster('Pending Request Data','Pending'))).props('icon=back')
                 ui.menu_item('Rejected Request Data', on_click=lambda: asyncio.create_task(refreshDataMaster('Rejected Request Data','Rejected'))).props('icon=menu')
                 ui.menu_item('Admin Operation',)
-                ui.menu_item('Married Data',)
+                # ui.menu_item('Married Data',)
         searchWithFields()
     with ui.card().classes('w-full h-screen p-4').style('background-color: grey; border-radius: 8px; box-shadow: 0 4px 8px rgba(0, 0, 0, 0.5)'):
-        ui.label('User Registration Request').classes('w-full text-center').style('font-size: 30px; font-weight: bold; font-family: Times New Roman; color: black')
-        async def fetchRequest(all=0):
-            requestScrollable.clear()
-            try:
-                connection = mysql.connector.connect(host='127.0.0.1',user='root',password='Nikish@2003',database='pentecostmatrimony')
-                cursor = connection.cursor()
-                if all:cursor.execute('select * from userData')
-                else:cursor.execute('select * from userData where requestStatus = %s',("Pending",))
-                pendingData = cursor.fetchall()
-                cursor.close()        
-                connection.close()
-            except:pendingData = []
-            with requestScrollable:
-                for i in pendingData:assignNewUser(i)
+        masterLabel = ui.label('All Data').classes('w-full text-center').style('font-size: 30px; font-weight: bold; font-family: Times New Roman; color: black')
         requestScrollable = ui.card().classes('w-full h-full').style('max-height:100vh; overflow-y:auto;')
-        asyncio.create_task(fetchRequest())
+        asyncio.create_task(refreshDataMaster('All Data'))
 
 @ui.page('/register')
 def personnelForm():
