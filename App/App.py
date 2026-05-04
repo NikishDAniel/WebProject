@@ -143,17 +143,12 @@ def admin():
             connection.commit()
             cursor.close();connection.close()
         except:print('database error')
-    async def fetchRequiredData(all=0,condition=None,value=None):
-        try:
-            connection = mysql.connector.connect(host='127.0.0.1',user='root',password='Nikish@2003',database='pentecostmatrimony')
-            cursor = connection.cursor()
-            if all:cursor.execute('select * from userData')
-            else:cursor.execute(f'''select * from userData where {condition} = %s''',(value,))
-            connection.commit()
-            cursor.close();connection.close()
-            refreshMaster(cursor.fetchall())
-        except:ui.notification('Database error',type='negative')
-    def assignNewUser(i):
+    async def fetchRequiredData():
+        for i in masterLabel.data:
+            if i[fields.index(searchField.value)+4].lower()==searchInput.value.lower():
+                if type=='All Data':print(i[4:-2])
+                else:await assignNewUser(i)
+    async def assignNewUser(i):
         currentUserMaster = ui.row().classes('w-full items-center gap-2')
         with currentUserMaster:
             currentUserCard = ui.card().classes('flex-grow w-80 p-4 cursor-pointer')
@@ -176,25 +171,28 @@ def admin():
                 if masterLabel.text=='Pending Request Data':currentUserMaster.remove(reject)
             approve = ui.button('Approve',icon='check',on_click=updater).props('rounded outline color=green')
             if masterLabel.text=='Pending Request Data':reject = ui.button('Reject ',icon='clear',on_click=removeUser).props('rounded outline color=red')
-    def allDataRefresh(i):
-        print(i[3:])
+    async def allDataRefresh(allDataMaster,i):
+        with allDataMaster:
+            with ui.card().classes('w-full aspect-square p-0 overflow-hidden'):
+                ui.image(f"data:image/{filetype.guess(i[1]).mime or 'jpeg'};base64,{base64.b64encode(i[1]).decode()}").classes('w-full h-full object-cover')
     async def refreshDataMaster(type,databaseFilter=''):
         try:
             connection = mysql.connector.connect(host='127.0.0.1',user='root',password='Nikish@2003',database='pentecostmatrimony')
             cursor = connection.cursor()
-            if type=='All Data':cursor.execute('select * from userData')
+            if type=='All Data':cursor.execute('select * from userData where role="user"')
             else:cursor.execute('select * from userData where requestStatus = %s',(databaseFilter,))
-            Data = cursor.fetchall()
-            cursor.close()          
+            masterLabel.data = cursor.fetchall()
+            cursor.close()
             connection.close()
-        except:Data = []
+        except:masterLabel.data = []
         masterLabel.set_text(type)
         requestScrollable.clear()
         with requestScrollable:
             if type=='All Data':
-                for i in Data:allDataRefresh(i)
+                allDataMaster = ui.grid(columns=3).classes('gap-4 w-full')
+                for i in masterLabel.data:await allDataRefresh(allDataMaster,i)
             else:
-                for i in Data:assignNewUser(i)
+                for i in masterLabel.data:await assignNewUser(i)
     with ui.row().classes('w-full h-20 items-center'):
         with ui.button(icon='menu'):
             with ui.menu():
@@ -203,9 +201,11 @@ def admin():
                 ui.menu_item('Rejected Request Data', on_click=lambda: asyncio.create_task(refreshDataMaster('Rejected Request Data','Rejected'))).props('icon=menu')
                 ui.menu_item('Admin Operation',)
                 # ui.menu_item('Married Data',)
-        searchWithFields()
+        searchInput,searchField = searchWithFields()
+        searchInput.on('keydown.enter',fetchRequiredData);searchInput.on('blur',fetchRequiredData)
     with ui.card().classes('w-full h-screen p-4').style('background-color: grey; border-radius: 8px; box-shadow: 0 4px 8px rgba(0, 0, 0, 0.5)'):
         masterLabel = ui.label('All Data').classes('w-full text-center').style('font-size: 30px; font-weight: bold; font-family: Times New Roman; color: black')
+        masterLabel.data = []
         requestScrollable = ui.card().classes('w-full h-full').style('max-height:100vh; overflow-y:auto;')
         asyncio.create_task(refreshDataMaster('All Data'))
 
@@ -213,7 +213,7 @@ def admin():
 def personnelForm():
     ui.page_title('Register Form')
     ui.label('Registration Form').classes('text-center w-full').style('font-size: 28px; font-weight: bold; font-family: Times New Roman; color: #333')
-    widgets,userForm,avatar,email,password,chips = form('#333','#f9f9f9',240)
+    with ui.column().classes('w-full h-screen items-center justify-center'):widgets,userForm,avatar,email,password,chips = form('#333','#f9f9f9',240)
     async def addData():
         def saveData():
             try:
@@ -265,7 +265,9 @@ async def home(email:str):
     if data is None:ui.navigate.to('/');return
     #ui.label(f'Welcome {data[4]}!').style('font-size: 24px; font-weight: bold; font-family: Times New Roman; color: #333')
     with ui.row().classes('w-full h-20 items-center'):ui.button('Logout', on_click=lambda: ui.navigate.to('/')).props('color=red');searchInput,searchField = searchWithFields()
-    widgets,userForm,avatar,emailWidget,password,chips = form('#f9f9f9','#000000','55')
+    with ui.grid().classes('w-full h-screen grid-cols-[300px_1fr] gap-4 items-start'):
+        widgets,userForm,avatar,emailWidget,password,chips = form('#f9f9f9','#000000','75')
+        with ui.card().classes('p-4 bg-transparent shadow-none border border-gray-300 w-full h-screen').style('background-color: grey; backdrop-filter: blur(10px); border-radius: 8px; box-shadow: 0 4px 8px rgba(0, 0, 0, 0.5);overflow-y: auto;'):matchDataMaster = ui.grid(columns=3,).classes('gap-4')
     userForm.photo = data[1]
     avatar.set_source(f"data:image/{filetype.guess(data[1]).mime or 'jpeg'};base64,{base64.b64encode(data[1]).decode()}")
     emailWidget.set_value(email)
@@ -368,7 +370,6 @@ async def home(email:str):
             return result
         task = asyncio.create_task(search())
         task.add_done_callback(lambda x:refreshMaster(x.result()))
-    with ui.card().classes('p-4 bg-transparent shadow-none border border-gray-300').style('position: absolute; top:250px; left:430px; width:1050px; height:600px; background-color: grey; backdrop-filter: blur(10px); border-radius: 8px; box-shadow: 0 4px 8px rgba(0, 0, 0, 0.5);overflow-y: auto;'):matchDataMaster = ui.grid(columns=3,).classes('gap-4')
     assignUsers()
     searchInput.on('keydown.enter',lambda x:assignUsers())
     searchInput.on('blur',lambda x:assignUsers())
@@ -394,7 +395,7 @@ def login():
                .white-input .q-field__control:after {border-bottom: 2px solid white !important;}
                .white-input .q-field__append .q-icon {color: white !important;}
                .white-input .q-field__append .q-icon:hover {color: grey !important;}''')
-    with ui.column().classes('w-full h-screen items-center justify-center'):
+    with ui.column().classes('w-full h-screen items-center justify-center overflow-hidden'):
         with ui.card().classes('md:w-1/3 lg:w-1/4 p-6').style('background-color: rgba(0, 0, 0, 0.6); backdrop-filter: blur(8px); border-radius: 10px; box-shadow: 0 4px 8px rgba(0, 0, 0, 0.5);'):
             ui.label('Login to your Account').classes('text-center w-full').style('font-size: 28px; font-weight: bold; font-family: Times New Roman; color: white')
             currentUser = ui.input('Email', placeholder='Enter your email').classes('white-input w-full')
