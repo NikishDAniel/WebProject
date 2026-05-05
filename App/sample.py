@@ -42,7 +42,7 @@ result = ''
 for i in s:
     if i in 'aeiou':
         primary = sortedList[0]
-        if primary not in order:
+        if primary not in sortedList:
             if len(sortedList)>1:
                 first , second = sortedList[:2]
                 if data[first]==data[second]:
