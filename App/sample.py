@@ -31,7 +31,7 @@
 
 from collections import defaultdict
 data = defaultdict(int)
-s = "leetcode"
+s = "aeiaaioooa"
 order = []
 for i in s:
     if i in 'aeiou':
@@ -41,12 +41,15 @@ sortedList = sorted(data,key=lambda x:data[x])[::-1]
 result = ''
 for i in s:
     if i in 'aeiou':
-        if len(sortedList)>1:
-            first , second = sortedList[:2]
-            if data[first]==data[second]:
-                if first in order[order.index(second):]:i=second
-                else:i=first
-        data[i] -= 1
-        if data[i]==0:sortedList = sortedList[1:]
-    result += i
+        primary = sortedList[0]
+        if primary not in order:
+            if len(sortedList)>1:
+                first , second = sortedList[:2]
+                if data[first]==data[second]:
+                    if first in order[order.index(second):]:primary=second
+                    else:primary=first
+        data[primary] -= 1
+        if data[primary]==0:sortedList = sortedList[1:]
+        result += primary
+    else:result += i
 print(result)
