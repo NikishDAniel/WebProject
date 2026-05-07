@@ -148,21 +148,6 @@ def form(textColor,bgColor,width='60'):
             else:widget = getattr(ui, widgetType)(label=label).classes('w-full').style('margin-top:10px')
             formWidgets[key] = widget
         return formWidgets,userForm,avatarImage,email,password,chips
-    
-@ui.page('/test')
-def test():
-    ui.page_title('Test Page')
-    with ui.card().style('width: 320px; height: 200px;'):
-        def addSibling(i):
-            with holderCard:
-                row = ui.grid(columns=2).classes('gap-2 w-full')
-                with row:ui.label(i);ui.button('',icon='delete',on_click=lambda row=row:holderCard.remove(row)).classes('ml-auto')
-        holderCard = ui.card().style('width: 290px;height: 90px;overflow-y: auto;')
-        with holderCard:pass
-        with ui.grid(columns=2).classes('gap-2 w-full'):
-            relationInput = ui.select(['Elder Brother','Elder Sister','Younger Brother','Younger Sister'],value='Elder Brother')
-            status = ui.checkbox('Married')
-        ui.button('Add',icon='add',on_click=lambda:addSibling(relationInput.value+(' - Married' if status.value else ' - Single'))).style('display:block; margin: 0 auto;')
 
 @ui.page('/admin')
 def admin():
