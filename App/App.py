@@ -2,11 +2,12 @@ from nicegui import ui,app,run
 import mysql.connector,base64,filetype,asyncio
 from cryptography.fernet import Fernet
 
-app.add_static_files('/icons','icons&Images')
+app.add_static_files('/icons','icons&Images')   # adds floder into the ui
 fields = ['Name','Profession','Date of birth','Gender','Qualification','Height','Income','Background','Marital Status','Languages Known',"Father's Name","Mother's Name", "Parent's Number",'Whatsapp Number','Family Status','Hometown','Current Resident Address','Siblings','Local Faith Home','Centre Faith Home','Expectations']
 key = b'nWjYyxV8EC5sbgkOMV_YekqyERDo1j2P4SAA_WNujVI='
 cipher = Fernet(key)
 
+# checks whether all the feilds in the form are filled or not
 def anyEmptyField(userForm,photo,languages):
     if not photo or not languages:return 1
     index = 0
@@ -15,6 +16,7 @@ def anyEmptyField(userForm,photo,languages):
         else:widget.style('border:2px white')
         index += 1
 
+# a function to verify the email at the time of login
 async def emailValidation(email='',check=0):
     container = ui.column()
     def fetchData():
@@ -34,12 +36,14 @@ async def emailValidation(email='',check=0):
         if check:return not currentUserData==None
         else:return currentUserData
     
+# checks the match of the password
 def checkUser(data,passwordEntry):
     email,validPassword,role,requestStatus = data
     if cipher.decrypt(validPassword.encode('utf-8')).decode()==passwordEntry:
         if role=='admin':ui.navigate.to('/admin')
         else:
-            if requestStatus=='Pending':ui.notification('Your request is pending approval.')
+            if requestStatus=='Pending':ui.notification("Your request's approval is pending.")
+            elif requestStatus=='Rejected':ui.notification('Your request is rejected')
             else:ui.navigate.to(f'/Home/{email}')
     else:ui.notification('Please enter the email and password correctly')
 
@@ -50,6 +54,7 @@ ui.add_head_html('''
                 .algerian-text {font-family: AlgerianCustom;}
                 </style>''',shared=1)
 
+# custom search widget
 def searchWithFields():
     with ui.card().classes('w-fit p-2 h-18 mx-auto').style(f'background-color: #f0f0f0; border-radius: 8px; box-shadow: 0 4px 8px rgba(0, 0, 0, 0.5);'):
         with ui.row().classes('items-center gap-2'):
@@ -59,6 +64,25 @@ def searchWithFields():
             searchField = ui.select(options=['Email']+fields,value='Email',on_change=lambda:searchInput.set_label('Search by '+searchField.value)).style('width:200px')
     return searchInput,searchField
 
+# testrun in sample.py
+def siblingsWidget():
+    with ui.card().classes('width-1/2') as siblingsWidgets:
+        def addSibling(i):
+            with holderCard:
+                row = ui.grid(columns=2).classes('gap-2 w-full')
+                with row:ui.label(i);ui.button('',icon='delete',on_click=lambda row=row:holderCard.remove(row)).classes('ml-auto')
+        holderCard = ui.card().style('width: 290px;height: 90px;overflow-y: auto;')
+        with holderCard:pass
+        with ui.grid(columns=2).classes('gap-2 w-full'):
+            relationInput = ui.select(['Elder Brother','Elder Sister','Younger Brother','Younger Sister'],value='Elder Brother')
+            status = ui.checkbox('Married')
+        ui.button('Add',icon='add',on_click=lambda:addSibling(relationInput.value+(' - Married' if status.value else ' - Single'))).style('display:block; margin: 0 auto;')
+        def addData(data):
+            for i in data:addSibling(i)
+        siblingsWidgets.addData = addData
+        return siblingsWidgets
+
+# registration and user form
 def form(textColor,bgColor,width='60'):
     ui.add_head_html(f'''<style>.avatar-container:hover .camera-icon {{background: {textColor} !important;color: {bgColor} !important;}}</style>''')
     ui.add_css(f'''
@@ -89,7 +113,7 @@ def form(textColor,bgColor,width='60'):
         camera_icon.on('click', lambda: upload.run_method('pickFiles'))
         widgets = {'name':['input','Name',''],'profession':['input','Profession',''],'dateOfBirth':['date_input','Date of Birth',''],'gender':['radio','Gender','Male,Female'],'qualification':['input','Qualification',''],'height':['input','Height',''],'income':['input','Income',''],'background':['select','Family Origin','TPM Born,CSI/Other'],
                    'maritalStatus':['radio','Marital Status','Single,Widowed'],'languagesKnown':['language','Languages Known',''],'fatherName':['input','Father Name',''],'motherName':['input','Mother Name',''],'parentsNumber':['input','Parents Number',''],'WhatsAppNumber':['input','WhatsApp Number',''],
-                   'familyStatus':['select','Family Status','High Class,Middle Class'],'hometown':['input','Hometown',''],'currentResidentAddress':['textarea','Current Resident Address',''],'siblings':['input','Siblings',''],'localFaithHome':['input','Local Faith Home',''],'centreFaithHome':['input','Centre Faith Home',''],'expectations':['textarea','Expectations','']}
+                   'familyStatus':['select','Family Status','High Class,Middle Class'],'hometown':['input','Hometown',''],'currentResidentAddress':['textarea','Current Resident Address',''],'siblings':['siblings','Siblings',''],'localFaithHome':['input','Local Faith Home',''],'centreFaithHome':['input','Centre Faith Home',''],'expectations':['textarea','Expectations','']}
         email = ui.input(label='Email',placeholder='Enter your Email').style(f'margin-top:10px')
         async def checkEmail():
             if await emailValidation(email.value,1):email.style('border:2px solid red');userForm.block = 1
@@ -111,30 +135,19 @@ def form(textColor,bgColor,width='60'):
                 chips = ui.row().classes('gap-0')
                 chips.lists = []
                 with chips:pass
+            elif widgetType == 'siblings':holderCard = siblingsWidget()
             elif widgetType == 'select':options = value.split(',');widget = ui.select(options=options,label=label,value=options[0]).classes('w-full').style('margin-top:10px')
             elif widgetType == 'radio':options = value.split(',');widget = ui.radio(options=options,value=options[0]).props('inline').classes('w-full').style('margin-top:10px')
             else:widget = getattr(ui, widgetType)(label=label).classes('w-full').style('margin-top:10px')
             formWidgets[key] = widget
-        return formWidgets,userForm,avatarImage,email,password,chips
-    
-@ui.page('/test')
-def test():
-    ui.page_title('Test Page')
-    with ui.card().style('width: 320px; height: 200px;'):
-        def addSibling(i):
-            with holderCard:
-                row = ui.grid(columns=2).classes('gap-2 w-full')
-                with row:ui.label(i);ui.button('',icon='delete',on_click=lambda row=row:holderCard.remove(row)).classes('ml-auto')
-        holderCard = ui.card().style('width: 290px;height: 90px;overflow-y: auto;')
-        with holderCard:pass
-        with ui.grid(columns=2).classes('gap-2 w-full'):
-            relationInput = ui.select(['Elder Brother','Elder Sister','Younger Brother','Younger Sister'],value='Elder Brother')
-            status = ui.checkbox('Married')
-        ui.button('Add',icon='add',on_click=lambda:addSibling(relationInput.value+(' - Married' if status.value else ' - Single'))).style('display:block; margin: 0 auto;')
+        return formWidgets,userForm,avatarImage,email,password,chips,holderCard
 
 @ui.page('/admin')
 def admin():
     ui.page_title('Admin')
+    ui.add_css('''.hover-card {transition: all 0.3s ease;}
+               .hover-card:hover {transform: scale(1.03);box-shadow: 0 10px 25px rgba(0,0,0,0.2);}''')
+    # a function to update the request status of the user in the database when the admin approves or rejects a request
     async def update(email,value):
         try:
             connection = mysql.connector.connect(host='127.0.0.1',user='root',password='Nikish@2003',database='pentecostmatrimony')
@@ -143,11 +156,13 @@ def admin():
             connection.commit()
             cursor.close();connection.close()
         except:print('database error')
+    # 
     async def fetchRequiredData():
         for i in masterLabel.data:
             if i[fields.index(searchField.value)+4].lower()==searchInput.value.lower():
                 if type=='All Data':print(i[4:-2])
                 else:await assignNewUser(i)
+    # a function to create card for each user in the admin panel with their details and approve/reject buttons
     async def assignNewUser(i):
         currentUserMaster = ui.row().classes('w-full items-center gap-2')
         with currentUserMaster:
@@ -171,10 +186,11 @@ def admin():
                 if masterLabel.text=='Pending Request Data':currentUserMaster.remove(reject)
             approve = ui.button('Approve',icon='check',on_click=updater).props('rounded outline color=green')
             if masterLabel.text=='Pending Request Data':reject = ui.button('Reject ',icon='clear',on_click=removeUser).props('rounded outline color=red')
+    # 
     async def allDataRefresh(allDataMaster,i):
         with allDataMaster:
-            with ui.card().classes('w-full aspect-square p-0 overflow-hidden'):
-                ui.image(f"data:image/{filetype.guess(i[1]).mime or 'jpeg'};base64,{base64.b64encode(i[1]).decode()}").classes('w-full h-full object-cover')
+            with ui.card().classes('w-full aspect-square p-0 overflow-hidden'):ui.image(f"data:image/{filetype.guess(i[1]).mime or 'jpeg'};base64,{base64.b64encode(i[1]).decode()}").classes('w-full h-full object-cover')
+    # 
     async def refreshDataMaster(type,databaseFilter=''):
         try:
             connection = mysql.connector.connect(host='127.0.0.1',user='root',password='Nikish@2003',database='pentecostmatrimony')
@@ -189,6 +205,7 @@ def admin():
         requestScrollable.clear()
         with requestScrollable:
             if type=='All Data':
+                overCoverCard = ui.card().classes('p-4 w-screen h-full bg-transparent shadow-none border border-gray-300').style('position: absolute; top:0px; left:0px; margin:0; border-radius:0;background-color: white; backdrop-filter: blur(10px); border-radius: 8px; box-shadow: 0 4px 8px rgba(0, 0, 0, 0.5); padding:20px;')
                 allDataMaster = ui.grid(columns=3).classes('gap-4 w-full')
                 for i in masterLabel.data:await allDataRefresh(allDataMaster,i)
             else:
@@ -213,7 +230,7 @@ def admin():
 def personnelForm():
     ui.page_title('Register Form')
     ui.label('Registration Form').classes('text-center w-full').style('font-size: 28px; font-weight: bold; font-family: Times New Roman; color: #333')
-    with ui.column().classes('w-full h-screen items-center justify-center'):widgets,userForm,avatar,email,password,chips = form('#333','#f9f9f9',240)
+    with ui.column().classes('w-full h-screen items-center justify-center'):widgets,userForm,avatar,email,password,chips,holderCard = form('#333','#f9f9f9',240)
     async def addData():
         def saveData():
             try:
@@ -266,7 +283,7 @@ async def home(email:str):
     #ui.label(f'Welcome {data[4]}!').style('font-size: 24px; font-weight: bold; font-family: Times New Roman; color: #333')
     with ui.row().classes('w-full h-20 items-center'):ui.button('Logout', on_click=lambda: ui.navigate.to('/')).props('color=red');searchInput,searchField = searchWithFields()
     with ui.grid().classes('w-full h-screen grid-cols-[300px_1fr] gap-4 items-start'):
-        widgets,userForm,avatar,emailWidget,password,chips = form('#f9f9f9','#000000','75')
+        widgets,userForm,avatar,emailWidget,password,chips,holderCard = form('#f9f9f9','#000000','75')
         with ui.card().classes('p-4 bg-transparent shadow-none border border-gray-300 w-full h-screen').style('background-color: grey; backdrop-filter: blur(10px); border-radius: 8px; box-shadow: 0 4px 8px rgba(0, 0, 0, 0.5);overflow-y: auto;'):matchDataMaster = ui.grid(columns=3,).classes('gap-4')
     userForm.photo = data[1]
     avatar.set_source(f"data:image/{filetype.guess(data[1]).mime or 'jpeg'};base64,{base64.b64encode(data[1]).decode()}")
@@ -396,16 +413,16 @@ def login():
                .white-input .q-field__append .q-icon {color: white !important;}
                .white-input .q-field__append .q-icon:hover {color: grey !important;}''')
     with ui.column().classes('w-full h-screen items-center justify-center overflow-hidden'):
-        with ui.card().classes('md:w-1/3 lg:w-1/4 p-6').style('background-color: rgba(0, 0, 0, 0.6); backdrop-filter: blur(8px); border-radius: 10px; box-shadow: 0 4px 8px rgba(0, 0, 0, 0.5);'):
+        with ui.card().classes('md:w-1/3 lg:w-1/4 p-6').style('background-color: rgba(0, 0, 0, 0.6); backdrop-filter: blur(8px); border-radius: 10px; box-shadow: 0 4px 8px rgba(0, 0, 0, 0.5);'):  # master frame
             ui.label('Login to your Account').classes('text-center w-full').style('font-size: 28px; font-weight: bold; font-family: Times New Roman; color: white')
             currentUser = ui.input('Email', placeholder='Enter your email').classes('white-input w-full')
             password = ui.input('Password', placeholder='Enter your password', password=1,password_toggle_button=1).classes('white-input w-full')
+            # fetches the user data
             async def handleLogin():
                 data = await emailValidation(currentUser.value)
                 if data:checkUser(data, password.value)
                 else:ui.notification('No account found with this email. Please register first.',close_button=True,type='negative')
             ui.button('Sign in',on_click=handleLogin,icon='login',color='red').classes('w-full')
             ui.link('Register',target='/register')
-    ui.button('Try',on_click=lambda:ui.navigate.to('/test'))
 
 ui.run(host='0.0.0.0', port=80)

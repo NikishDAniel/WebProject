@@ -28,28 +28,28 @@
 # pdf.write_html('<p align="center">Clarification on your biodata to any of these nos. <b>Bro. D. Annadoss</b> (Telegram no. 9884153831), <b>Bro. Sekar</b> (Telegram no. 9940408879) for TPM Matrimony.</p>')
 # pdf.output('biodata.pdf')
 
+from nicegui import ui
 
-from collections import defaultdict
-data = defaultdict(int)
-s = "aeiaaioooa"
-order = []
-for i in s:
-    if i in 'aeiou':
-        data[i] += 1
-        if i not in order:order.append(i)
-sortedList = sorted(data,key=lambda x:data[x])[::-1]
-result = ''
-for i in s:
-    if i in 'aeiou':
-        primary = sortedList[0]
-        if primary not in sortedList:
-            if len(sortedList)>1:
-                first , second = sortedList[:2]
-                if data[first]==data[second]:
-                    if first in order[order.index(second):]:primary=second
-                    else:primary=first
-        data[primary] -= 1
-        if data[primary]==0:sortedList = sortedList[1:]
-        result += primary
-    else:result += i
-print(result)
+def siblingW():
+    with ui.card().classes('width-1/2') as siblingsWidget:
+        def addSibling(i):
+            with holderCard:
+                row = ui.grid(columns=2).classes('gap-2 w-full')
+                with row:ui.label(i);ui.button('',icon='delete',on_click=lambda row=row:holderCard.remove(row)).classes('ml-auto')
+        holderCard = ui.card().style('width: 290px;height: 90px;overflow-y: auto;')
+        with holderCard:pass
+        with ui.grid(columns=2).classes('gap-2 w-full'):
+            relationInput = ui.select(['Elder Brother','Elder Sister','Younger Brother','Younger Sister'],value='Elder Brother')
+            status = ui.checkbox('Married')
+        ui.button('Add',icon='add',on_click=lambda:addSibling(relationInput.value+(' - Married' if status.value else ' - Single'))).style('display:block; margin: 0 auto;')
+        def addData(data):
+            for i in data:addSibling(i)
+        siblingsWidget.addData = addData
+        return siblingsWidget
+
+@ui.page('/')
+def main():
+    siblingsWidget = siblingW()
+    ui.button('Apply',on_click=lambda:siblingsWidget.addData(['Elder Brother - Married','Elder Brother - Single','Younger Sister - Single']))
+    
+ui.run('0.0.0.0',port=80)
