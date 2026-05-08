@@ -28,7 +28,7 @@
 # pdf.write_html('<p align="center">Clarification on your biodata to any of these nos. <b>Bro. D. Annadoss</b> (Telegram no. 9884153831), <b>Bro. Sekar</b> (Telegram no. 9940408879) for TPM Matrimony.</p>')
 # pdf.output('biodata.pdf')
 
-from nicegui import ui
+'''from nicegui import ui
 
 def siblingW():
     with ui.card().classes('width-1/2') as siblingsWidget:
@@ -52,4 +52,9 @@ def main():
     siblingsWidget = siblingW()
     ui.button('Apply',on_click=lambda:siblingsWidget.addData(['Elder Brother - Married','Elder Brother - Single','Younger Sister - Single']))
     
-ui.run('0.0.0.0',port=80)
+ui.run('0.0.0.0',port=80)'''
+
+from cryptography.fernet import Fernet
+key = b'nWjYyxV8EC5sbgkOMV_YekqyERDo1j2P4SAA_WNujVI='
+cipher = Fernet(key)
+print(cipher.encrypt('admin123'.encode()).decode('utf-8'))

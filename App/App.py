@@ -135,12 +135,33 @@ def form(textColor,bgColor,width='60'):
                 chips = ui.row().classes('gap-0')
                 chips.lists = []
                 with chips:pass
-            elif widgetType == 'siblings':holderCard = siblingsWidget()
+            elif widgetType == 'siblings':
+                with userForm:holderCard = siblingsWidget()
             elif widgetType == 'select':options = value.split(',');widget = ui.select(options=options,label=label,value=options[0]).classes('w-full').style('margin-top:10px')
             elif widgetType == 'radio':options = value.split(',');widget = ui.radio(options=options,value=options[0]).props('inline').classes('w-full').style('margin-top:10px')
             else:widget = getattr(ui, widgetType)(label=label).classes('w-full').style('margin-top:10px')
             formWidgets[key] = widget
         return formWidgets,userForm,avatarImage,email,password,chips,holderCard
+    
+@ui.page('/adminOperation')
+async def adminOperation():
+    ui.page_title('Admin Operation')
+    # ui.dark_mode().enable()
+    async def updateAdmin():
+        try:
+            connection = mysql.connector.connect(host='127.0.0.1',user='root',password='Nikish@2003',database='pentecostmatrimony')
+            cursor = connection.cursor()
+            cursor.execute('''''')
+        except mysql.connector.Error as error:ui.notification(f'Database error: {str(error)}',type='negative');return
+    def changeAdminMenu(type):adminLabel.set_text(type)
+    with ui.card().classes('w-full h-screen'):
+        with ui.grid(columns='30% 70%').classes('w-full h-full gap-1'):
+            with ui.card().classes('w-full h-full'):
+                ui.button('Add Admin',on_click=lambda:changeAdminMenu('Add Admin')).classes('w-full text-center')
+                ui.button('Update Admin Contact Details',on_click=lambda:changeAdminMenu('Update Admin Contact Details')).classes('w-full text-center')
+            with ui.card().classes('w-full h-full overflow-auto'):
+                adminLabel = ui.label('Add Admin').classes('w-full text-center').style('font-size: 30px; font-weight: bold; font-family: Times New Roman; color: black')
+                ui.button('Add').classes('text-center')
 
 @ui.page('/admin')
 def admin():
@@ -205,22 +226,22 @@ def admin():
         requestScrollable.clear()
         with requestScrollable:
             if type=='All Data':
-                overCoverCard = ui.card().classes('p-4 w-screen h-full bg-transparent shadow-none border border-gray-300').style('position: absolute; top:0px; left:0px; margin:0; border-radius:0;background-color: white; backdrop-filter: blur(10px); border-radius: 8px; box-shadow: 0 4px 8px rgba(0, 0, 0, 0.5); padding:20px;')
+                overCoverCard = ui.card().classes('p-4 w-screen h-full bg-transparent shadow-none border border-gray-300').style('position: absolute; top:0px; left:0px; margin:0; border-radius:0;background-color: white; backdrop-filter: blur(10px); border-radius: 8px; box-shadow: 0 4px 8px rgba(0, 0, 0, 0.5); padding:20px;')  # an overlay card under the details master
                 allDataMaster = ui.grid(columns=3).classes('gap-4 w-full')
                 for i in masterLabel.data:await allDataRefresh(allDataMaster,i)
             else:
                 for i in masterLabel.data:await assignNewUser(i)
-    with ui.row().classes('w-full h-20 items-center'):
+    with ui.row().classes('w-full h-20 items-center'):  # aligns the search and menu in a row
         with ui.button(icon='menu'):
             with ui.menu():
                 ui.menu_item('All Data', on_click=lambda: asyncio.create_task(refreshDataMaster('All Data'))).props('icon=home')
                 ui.menu_item('Pending Request Data', on_click=lambda: asyncio.create_task(refreshDataMaster('Pending Request Data','Pending'))).props('icon=back')
                 ui.menu_item('Rejected Request Data', on_click=lambda: asyncio.create_task(refreshDataMaster('Rejected Request Data','Rejected'))).props('icon=menu')
-                ui.menu_item('Admin Operation',)
+                ui.menu_item('Admin Operation',on_click=lambda:ui.navigate.to('/adminOperation')).props('icon=settings')
                 # ui.menu_item('Married Data',)
         searchInput,searchField = searchWithFields()
         searchInput.on('keydown.enter',fetchRequiredData);searchInput.on('blur',fetchRequiredData)
-    with ui.card().classes('w-full h-screen p-4').style('background-color: grey; border-radius: 8px; box-shadow: 0 4px 8px rgba(0, 0, 0, 0.5)'):
+    with ui.card().classes('w-full h-screen p-4').style('background-color: grey; border-radius: 8px; box-shadow: 0 4px 8px rgba(0, 0, 0, 0.5)'):    # a card to hold all the data
         masterLabel = ui.label('All Data').classes('w-full text-center').style('font-size: 30px; font-weight: bold; font-family: Times New Roman; color: black')
         masterLabel.data = []
         requestScrollable = ui.card().classes('w-full h-full').style('max-height:100vh; overflow-y:auto;')
@@ -315,6 +336,7 @@ async def home(email:str):
         if anyEmptyField(userForm,userForm.photo,chips.lists):ui.notification('Please fill all the fields')
         else:await updateData();ui.notification('Details updated successfully!')
     ui.button('Update',icon='edit',on_click=handleSubmit)
+    # it creates a pdf
     async def downloadPdf():
         from fpdf import FPDF,FontFace
         import io
@@ -350,6 +372,7 @@ async def home(email:str):
         pdf.write_html('<p align="center">Clarification on your biodata to any of these nos. <b>Bro. D. Annadoss</b> (Telegram no. 9884153831), <b>Bro. Sekar</b> (Telegram no. 9940408879) for TPM Matrimony.</p>')
         pdfBytes = bytes(pdf.output(dest='S'))
         ui.download(pdfBytes,filename=f'{data[1]}_biodata.pdf')
+    # 
     def showCurrentDetails(i):
         index = 0
         detailsCard.clear()
@@ -403,7 +426,16 @@ async def home(email:str):
     userCardDetails.set_visibility(False)
 
 @ui.page('/')
-def login():
+async def login():
+    # fetches admin contact details
+    async def fetchAdmin():
+        try:
+            connection = mysql.connector.connect(host='127.0.0.1',user='root',password='Nikish@2003',database='pentecostmatrimony')
+            cursor = connection.cursor()
+            cursor.execute('''select name,profession,whatsApptelegram from userData where role = "admin"''')
+            result = cursor.fetchall()
+            return result
+        except mysql.connector.Error as error:return None
     ui.page_title('Login Page')
     ui.add_css('''body {background-image: url("/icons/image1.png");background-size: cover;background-position:top center;background-repeat: no-repeat;height: 100vh;}
                .white-input .q-field__label {color: white !important;}
@@ -424,5 +456,9 @@ def login():
                 else:ui.notification('No account found with this email. Please register first.',close_button=True,type='negative')
             ui.button('Sign in',on_click=handleLogin,icon='login',color='red').classes('w-full')
             ui.link('Register',target='/register')
+    supportLabel = 'Contact us:'
+    for i in await fetchAdmin():
+        if i[1]=='1':supportLabel += f' Bro.{i[0]} (Ph no.{i[2]}),'
+    ui.label(supportLabel[:-1]).classes('absolute bottom-4 left-2').style('font-size: 16px; font-family: Times New Roman; color: white')
 
 ui.run(host='0.0.0.0', port=80)
