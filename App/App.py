@@ -16,6 +16,16 @@ def anyEmptyField(userForm,photo,languages):
         else:widget.style('border:2px white')
         index += 1
 
+# fn to fetch admin data
+async def fetchAdmin():
+    try:
+        connection = mysql.connector.connect(host='127.0.0.1',user='root',password='Nikish@2003',database='pentecostmatrimony')
+        cursor = connection.cursor()
+        cursor.execute('''select email,passwords,name,profession,WhatsAppTelegram from userData where role = "admin"''')
+        result = cursor.fetchall()
+        return result
+    except mysql.connector.Error as error:return None
+
 # a function to verify the email at the time of login
 async def emailValidation(email='',check=0):
     container = ui.column()
@@ -66,21 +76,22 @@ def searchWithFields():
 
 # testrun in sample.py
 def siblingsWidget():
-    with ui.card().classes('width-1/2') as siblingsWidgets:
+    ui.add_css(f'''.sibling-widget .q-field__label,.sibling-widget .q-field__native,.sibling-widget .q-icon,.sibling-widget .q-checkbox__label,.sibling-widget .q-select {{color: black  !important;}}''')
+    with ui.card().classes('w-full h-[40%] sibling-widget') as siblingsWidgets:
         def addSibling(i):
             with holderCard:
                 row = ui.grid(columns=2).classes('gap-2 w-full')
                 with row:ui.label(i);ui.button('',icon='delete',on_click=lambda row=row:holderCard.remove(row)).classes('ml-auto')
-        holderCard = ui.card().style('width: 290px;height: 90px;overflow-y: auto;')
+        holderCard = ui.card().classes('w-full h-[40%] overflow-auto')
         with holderCard:pass
         with ui.grid(columns=2).classes('gap-2 w-full'):
-            relationInput = ui.select(['Elder Brother','Elder Sister','Younger Brother','Younger Sister'],value='Elder Brother')
+            relationInput = ui.select(['Elder Brother','Elder Sister','Younger Brother','Younger Sister'],value='Elder Brother').props('outlined')
             status = ui.checkbox('Married')
         ui.button('Add',icon='add',on_click=lambda:addSibling(relationInput.value+(' - Married' if status.value else ' - Single'))).style('display:block; margin: 0 auto;')
         def addData(data):
             for i in data:addSibling(i)
         siblingsWidgets.addData = addData
-        return siblingsWidgets
+        return siblingsWidgets,holderCard
 
 # registration and user form
 def form(textColor,bgColor,width='60'):
@@ -95,7 +106,7 @@ def form(textColor,bgColor,width='60'):
             .dynamic-form .q-icon {{color: {textColor} !important;}}
             .dynamic-form .q-radio__label,
             .dynamic-form .q-option-group,
-            .dynamic-form .q-select {{color: {textColor} !important;}}''')
+            .dynamic-form .q-select {{color: black  !important;}}''')
     userForm = ui.card().classes(f'dynamic-form w-{width} h-screen text-center').style(f'background-color: {bgColor}; border-radius: 8px; box-shadow: 0 4px 8px rgba(0, 0, 0, 0.5); overflow-y: auto;')
     userForm.photo = None
     userForm.block = None
@@ -136,35 +147,74 @@ def form(textColor,bgColor,width='60'):
                 chips.lists = []
                 with chips:pass
             elif widgetType == 'siblings':
-                with userForm:holderCard = siblingsWidget()
+                with userForm:sibling,holderCard = siblingsWidget()
             elif widgetType == 'select':options = value.split(',');widget = ui.select(options=options,label=label,value=options[0]).classes('w-full').style('margin-top:10px')
             elif widgetType == 'radio':options = value.split(',');widget = ui.radio(options=options,value=options[0]).props('inline').classes('w-full').style('margin-top:10px')
             else:widget = getattr(ui, widgetType)(label=label).classes('w-full').style('margin-top:10px')
             formWidgets[key] = widget
-        return formWidgets,userForm,avatarImage,email,password,chips,holderCard
+        return formWidgets,userForm,avatarImage,email,password,chips,sibling,holderCard
     
 @ui.page('/adminOperation')
 async def adminOperation():
     ui.page_title('Admin Operation')
-    # ui.dark_mode().enable()
+    dataFields = ['Email','Password','Name','Contact Details']
     async def updateAdmin():
         try:
             connection = mysql.connector.connect(host='127.0.0.1',user='root',password='Nikish@2003',database='pentecostmatrimony')
             cursor = connection.cursor()
-            cursor.execute('''''')
+            if adminLabel.text=='Add New Admin':
+                for i in adminGrid:print(i)
+                cursor.execute('''insert into userData (Photo,Email,Passwords,Name,Profession,Dob,Gender,Qualification,Height,Income,FamilyOrigin,MaritalStatus,Languages,FatherName,MotherName,ParentsNumber,WhatsAppTelegram,Status,Hometown,CurrentAddress,Siblings,LocalFaithHome,CenterFaithHome,Expectations,requestStatus) VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)''',
+                (None,'needs admin value','encrypted password','name','0',None,None,None,None,None,None,None,None,None,None,None,'phone number',None,None,None,None,None,None,None,None))
+            else:
+                for i in adminGrid:
+                    name = i._text.split('-')[0]
+                    print(name,i.value)
+                    # cursor.execute('''update userData set name=%s,whatsApptelegram=%s where role='admin' and name=%s''',(adminName.value,adminContact.value,originalName))
+            connection.commit()
+            cursor.close();connection.close()
         except mysql.connector.Error as error:ui.notification(f'Database error: {str(error)}',type='negative');return
-    def changeAdminMenu(type):adminLabel.set_text(type)
+    def changeAdminData(i):
+        adminGrid.clear()
+        index = 0
+        with adminGrid:
+            with ui.grid(columns='50% 50%').classes('gap-2 w-full'):
+                ui.button('Back',icon='arrow_back',on_click=lambda:changeAdminMenu('All Admins')).props('color=red rounded outline').classes('w-full')
+                ui.button('Save',icon='save').props('color=green rounded outline').classes('w-full')
+            for x in dataFields:ui.input(label=x,value=i[index+(1 if x=='Contact Details' else 0)]).classes('w-full').style('font-size: 24px; font-weight: bold; font-family: Times New Roman; color: blue');index += 1
+    def showAdminData(i):ui.label(i[2]).style('font-size: 24px; font-weight: bold; font-family: Times New Roman; color: blue');ui.label(i[4]).style('font-size: 20px; font-family: Times New Roman; color: black');ui.button('Edit',icon='edit',on_click=lambda:changeAdminData(i)).props('color=blue rounded outline');ui.button('Delete',icon='delete').props('color=red rounded outline')
+    async def changeAdminMenu(type):
+        adminLabel.set_text(type)
+        adminGrid.clear()
+        if type=='Add New Admin':
+            saveButton.set_visibility(1)
+            with adminGrid:
+                with ui.grid(columns='40% 60%').classes('gap-2 w-full'):
+                    for i in dataFields:ui.label(f'Enter the {i}').classes('w-full mt-auto').style('font-weight: bold; font-family: Times New Roman; color: black; font-size: 20px;');ui.input(label=i).classes('w-full')
+        else:
+            with adminGrid:
+                for i in await fetchAdmin():
+                    if type=='All Admins':
+                        saveButton.set_visibility(0)
+                        with ui.grid(columns='30% 30% 18% 20%').classes('w-full items-center gap-2'):showAdminData(i)
+                    else:
+                        saveButton.set_visibility(1)
+                        ui.checkbox(text=f'{i[2]} - {i[4]}',value=True if i[3]=='1' else False).style('font-weight: bold; font-family: Times New Roman; color: black; font-size: 24px;')
     with ui.card().classes('w-full h-screen'):
         with ui.grid(columns='30% 70%').classes('w-full h-full gap-1'):
             with ui.card().classes('w-full h-full'):
-                ui.button('Add Admin',on_click=lambda:changeAdminMenu('Add Admin')).classes('w-full text-center')
-                ui.button('Update Admin Contact Details',on_click=lambda:changeAdminMenu('Update Admin Contact Details')).classes('w-full text-center')
-            with ui.card().classes('w-full h-full overflow-auto'):
+                ui.button('All Admins',on_click=lambda:changeAdminMenu('All Admins'),icon='group').classes('w-full text-center')
+                ui.button('Add New Admin',on_click=lambda:changeAdminMenu('Add New Admin'),icon='add').classes('w-full text-center')
+                ui.button('Update Admin Contact Details',on_click=lambda:changeAdminMenu('Update Admin Contact Details'),icon='edit').classes('w-full text-center')
+            with ui.card().classes('w-full h-full'):
                 adminLabel = ui.label('Add Admin').classes('w-full text-center').style('font-size: 30px; font-weight: bold; font-family: Times New Roman; color: black')
-                ui.button('Add').classes('text-center')
+                adminGrid = ui.card().classes('w-[90%] h-full p-4 mx-auto overflow-auto')
+                saveButton = ui.button('Save',icon='save',on_click=updateAdmin).props('color=green rounded outline').classes('w-full mt-4')
+                saveButton.set_visibility(0)
+                await changeAdminMenu('All Admins')
 
 @ui.page('/admin')
-def admin():
+async def admin():
     ui.page_title('Admin')
     ui.add_css('''.hover-card {transition: all 0.3s ease;}
                .hover-card:hover {transform: scale(1.03);box-shadow: 0 10px 25px rgba(0,0,0,0.2);}''')
@@ -177,12 +227,23 @@ def admin():
             connection.commit()
             cursor.close();connection.close()
         except:print('database error')
-    # 
+    # search field refresh function
     async def fetchRequiredData():
         for i in masterLabel.data:
             if i[fields.index(searchField.value)+4].lower()==searchInput.value.lower():
                 if type=='All Data':print(i[4:-2])
                 else:await assignNewUser(i)
+    def showCurrentUserData(currentImage,data):
+        detailsCard.clear()
+        overCoverCard.set_visibility(1)
+        with detailsCard:
+            ui.interactive_image(currentImage).classes('max-w-full max-h-screen object-contain')
+            index = 0
+            with ui.grid(columns=2).classes('gap-2 w-full'):
+                for i in data:
+                    ui.label(fields[index]).style('font-size: 24px; font-weight: bold; font-family: Times New Roman; color: #333')
+                    ui.label(i).style('font-size: 20px; font-family: Times New Roman; color: #333')
+                    index += 1
     # a function to create card for each user in the admin panel with their details and approve/reject buttons
     async def assignNewUser(i):
         currentUserMaster = ui.row().classes('w-full items-center gap-2')
@@ -207,11 +268,14 @@ def admin():
                 if masterLabel.text=='Pending Request Data':currentUserMaster.remove(reject)
             approve = ui.button('Approve',icon='check',on_click=updater).props('rounded outline color=green')
             if masterLabel.text=='Pending Request Data':reject = ui.button('Reject ',icon='clear',on_click=removeUser).props('rounded outline color=red')
-    # 
+    # here assigns the all data of the users
     async def allDataRefresh(allDataMaster,i):
         with allDataMaster:
-            with ui.card().classes('w-full aspect-square p-0 overflow-hidden'):ui.image(f"data:image/{filetype.guess(i[1]).mime or 'jpeg'};base64,{base64.b64encode(i[1]).decode()}").classes('w-full h-full object-cover')
-    # 
+            with ui.card().classes('w-full aspect-square p-0 overflow-hidden hover-card') as currentCard:
+                currentImage = f"data:image/{filetype.guess(i[1]).mime or 'jpeg'};base64,{base64.b64encode(i[1]).decode()}"
+                ui.image(currentImage).classes('w-full h-full object-cover')
+            currentCard.on('click',lambda:showCurrentUserData(currentImage,i[4:-2]))
+    # fn to refresh the data in master card
     async def refreshDataMaster(type,databaseFilter=''):
         try:
             connection = mysql.connector.connect(host='127.0.0.1',user='root',password='Nikish@2003',database='pentecostmatrimony')
@@ -226,7 +290,6 @@ def admin():
         requestScrollable.clear()
         with requestScrollable:
             if type=='All Data':
-                overCoverCard = ui.card().classes('p-4 w-screen h-full bg-transparent shadow-none border border-gray-300').style('position: absolute; top:0px; left:0px; margin:0; border-radius:0;background-color: white; backdrop-filter: blur(10px); border-radius: 8px; box-shadow: 0 4px 8px rgba(0, 0, 0, 0.5); padding:20px;')  # an overlay card under the details master
                 allDataMaster = ui.grid(columns=3).classes('gap-4 w-full')
                 for i in masterLabel.data:await allDataRefresh(allDataMaster,i)
             else:
@@ -244,25 +307,41 @@ def admin():
     with ui.card().classes('w-full h-screen p-4').style('background-color: grey; border-radius: 8px; box-shadow: 0 4px 8px rgba(0, 0, 0, 0.5)'):    # a card to hold all the data
         masterLabel = ui.label('All Data').classes('w-full text-center').style('font-size: 30px; font-weight: bold; font-family: Times New Roman; color: black')
         masterLabel.data = []
-        requestScrollable = ui.card().classes('w-full h-full').style('max-height:100vh; overflow-y:auto;')
+        requestScrollable = ui.card().classes('w-full h-full overflow-auto')
         asyncio.create_task(refreshDataMaster('All Data'))
+    overCoverCard = ui.card().classes('p-4 w-screen h-full bg-transparent shadow-none border border-gray-300').style('position: absolute; top:0px; left:0px; margin:0; border-radius:0;background-color: white; backdrop-filter: blur(10px); border-radius: 8px; box-shadow: 0 4px 8px rgba(0, 0, 0, 0.5); padding:20px;')  # an overlay card under the details master
+    with overCoverCard:
+        with ui.card().classes('w-full h-full p-4 mx-auto overflow-auto').style('background-color: #f0f0f0; border-radius: 8px; box-shadow: 0 4px 8px rgba(0, 0, 0, 0.5);'):
+            with ui.row().classes('w-full items-center no-wrap gap-2'):
+                ui.button(text='Back',icon='arrow_back',on_click=lambda:overCoverCard.set_visibility(0)).props('color=red rounded outline')
+                ui.label('User Details').classes('flex-grow text-center').style('font-size: 30px; font-weight: bold; font-family: Times New Roman; color: black')
+                ui.button('Delete',icon='delete',).props('color=red rounded outline')
+            detailsCard = ui.card().classes('w-full h-full p-4 mx-auto overflow-auto')
+    overCoverCard.set_visibility(0)
 
 @ui.page('/register')
 def personnelForm():
     ui.page_title('Register Form')
     ui.label('Registration Form').classes('text-center w-full').style('font-size: 28px; font-weight: bold; font-family: Times New Roman; color: #333')
-    with ui.column().classes('w-full h-screen items-center justify-center'):widgets,userForm,avatar,email,password,chips,holderCard = form('#333','#f9f9f9',240)
+    with ui.column().classes('w-full h-screen items-center justify-center'):widgets,userForm,avatar,email,password,chips,sibling,holderCard = form('#333','#f9f9f9',240)
     async def addData():
-        def saveData():
+        async def saveData(data):
             try:
                 connection = mysql.connector.connect(host='127.0.0.1',user='root',password='Nikish@2003',database='pentecostmatrimony')
                 cursor = connection.cursor()
-                cursor.execute('''insert into userData(Photo,Email,Passwords,Name,Profession,Dob,Gender,Qualification,Height,Income,FamilyOrigin,MaritalStatus,Languages,FatherName,MotherName,ParentsNumber,WhatsAppTelegram,Status,Hometown,CurrentAddress,Siblings,LocalFaithHome,CenterFaithHome,Expectations,requestStatus) VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)''',
-                            (userForm.photo,email.value,cipher.encrypt(password.value.encode()).decode('utf-8'))+tuple(widgets[x].value if x!='languagesKnown' else ','.join(chips.lists) for x in widgets)+('Pending',))
+                cursor.execute('insert into userData(Photo,Email,Passwords,Name,Profession,Dob,Gender,Qualification,Height,Income,FamilyOrigin,MaritalStatus,Languages,FatherName,MotherName,ParentsNumber,WhatsAppTelegram,Status,Hometown,CurrentAddress,Siblings,LocalFaithHome,CenterFaithHome,Expectations,requestStatus) VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)',data)
                 connection.commit()
                 cursor.close();connection.close()
             except mysql.connector.Error as e:print(e)
-        await run.io_bound(saveData)
+        data = (userForm.photo,email.value,cipher.encrypt(password.value.encode()).decode('utf-8'),)
+        for x in widgets:
+            if x=='languagesKnown':data += (','.join(chips.lists),)
+            elif x=='siblings':
+                siblingValue = ''
+                for i in holderCard.default_slot.children:label_widget = i.default_slot.children[0];siblingValue += label_widget._text+','
+                data += (siblingValue,)
+            else:data += (widgets[x].value,)
+        await saveData(data+('Pending',))
         ui.notification('Request sent successfully!')
         await asyncio.sleep(0.4)
         ui.navigate.to('/')
@@ -272,7 +351,7 @@ def personnelForm():
             if userForm.block:ui.notification('This email is already registered. Please use a different email or login.',type='negative')
             else:await addData()
     ui.button('Submit', on_click=handleSubmit).style('display:block; margin: 0 auto;')
-    
+
 @ui.page('/Home/{email}')
 async def home(email:str):
     ui.page_title('Pentacost Matrimony')
@@ -292,6 +371,7 @@ async def home(email:str):
             verse = ui.label().classes('text-center').style('font-size: 16px; font-family: Times New Roman; color: blue')
     showVerse()
     ui.timer(5,showVerse)
+    # fetch user data
     async def fetchData():
         connection = mysql.connector.connect(host='127.0.0.1',user='root',password='Nikish@2003',database='pentecostmatrimony')
         cursor = connection.cursor()
@@ -303,9 +383,10 @@ async def home(email:str):
     if data is None:ui.navigate.to('/');return
     #ui.label(f'Welcome {data[4]}!').style('font-size: 24px; font-weight: bold; font-family: Times New Roman; color: #333')
     with ui.row().classes('w-full h-20 items-center'):ui.button('Logout', on_click=lambda: ui.navigate.to('/')).props('color=red');searchInput,searchField = searchWithFields()
-    with ui.grid().classes('w-full h-screen grid-cols-[300px_1fr] gap-4 items-start'):
-        widgets,userForm,avatar,emailWidget,password,chips,holderCard = form('#f9f9f9','#000000','75')
-        with ui.card().classes('p-4 bg-transparent shadow-none border border-gray-300 w-full h-screen').style('background-color: grey; backdrop-filter: blur(10px); border-radius: 8px; box-shadow: 0 4px 8px rgba(0, 0, 0, 0.5);overflow-y: auto;'):matchDataMaster = ui.grid(columns=3,).classes('gap-4')
+    with ui.grid().classes('w-full h-screen grid-cols-[300px_1fr] gap-2 items-start'):
+        widgets,userForm,avatar,emailWidget,password,chips,sibling,holderCard = form('#f9f9f9','#000000','75')
+        # here is the master card
+        with ui.card().classes('p-4 bg-transparent shadow-none border border-gray-300 w-full h-screen overflow-auto').style('background-color: grey; backdrop-filter: blur(10px); border-radius: 8px; box-shadow: 0 4px 8px rgba(0, 0, 0, 0.5)'):matchDataMaster = ui.grid(columns=3).classes('w-full gap-2 items-start')
     userForm.photo = data[1]
     avatar.set_source(f"data:image/{filetype.guess(data[1]).mime or 'jpeg'};base64,{base64.b64encode(data[1]).decode()}")
     emailWidget.set_value(email)
@@ -318,24 +399,34 @@ async def home(email:str):
             chips.lists = data[index].split(',')
             with chips:
                 for i in chips.lists:addChips(i)
+        elif index==21:sibling.addData(data[index].split(',')[:-1])
         else:widgets[i].set_value(data[index])
         index += 1
         if index in [7,8]:widgets[i].disable()
-    async def updateData():
+    async def updateData(data):
         def saveData():
             try:
                 connection = mysql.connector.connect(host='127.0.0.1',user='root',password='Nikish@2003',database='pentecostmatrimony')
                 cursor = connection.cursor()
-                cursor.execute('''update userData set Photo=%s,Email=%s,Passwords=%s,Name=%s,Profession=%s,Dob=%s,Gender=%s,Qualification=%s,Height=%s,Income=%s,FamilyOrigin=%s,MaritalStatus=%s,Languages=%s,FatherName=%s,MotherName=%s,ParentsNumber=%s,WhatsAppTelegram=%s,Status=%s,Hometown=%s,CurrentAddress=%s,Siblings=%s,LocalFaithHome=%s,CenterFaithHome=%s,Expectations=%s,requestStatus=%s where Email=%s''',
-                            (userForm.photo,email,cipher.encrypt(password.value.encode()).decode('utf-8'))+tuple(widgets[x].value if x!='languagesKnown' else ','.join(chips.lists) for x in widgets)+('Approved',email))
+                cursor.execute('update userData set Photo=%s,Email=%s,Passwords=%s,Name=%s,Profession=%s,Dob=%s,Gender=%s,Qualification=%s,Height=%s,Income=%s,FamilyOrigin=%s,MaritalStatus=%s,Languages=%s,FatherName=%s,MotherName=%s,ParentsNumber=%s,WhatsAppTelegram=%s,Status=%s,Hometown=%s,CurrentAddress=%s,Siblings=%s,LocalFaithHome=%s,CenterFaithHome=%s,Expectations=%s,requestStatus=%s where Email=%s',data)
                 connection.commit()
                 cursor.close();connection.close()
             except mysql.connector.Error as e:print(e)
         await run.io_bound(saveData)
     async def handleSubmit():
         if anyEmptyField(userForm,userForm.photo,chips.lists):ui.notification('Please fill all the fields')
-        else:await updateData();ui.notification('Details updated successfully!')
-    ui.button('Update',icon='edit',on_click=handleSubmit)
+        else:
+            data = (userForm.photo,email,cipher.encrypt(password.value.encode()).decode('utf-8'),)
+            for x in widgets:
+                if x=='languagesKnown':data += (','.join(chips.lists),)
+                elif x=='siblings':
+                    siblingValue = ''
+                    for i in holderCard.default_slot.children:label_widget = i.default_slot.children[0];siblingValue += label_widget._text+','
+                    data += (siblingValue,)
+                else:data += (widgets[x].value,)
+            data += ('Approved',email)
+            await updateData(data);ui.notification('Details updated successfully!')
+    with ui.row().classes('items-center justify-center'):ui.button('Update',icon='edit',on_click=handleSubmit);ui.label(supportLabel).classes('flex-grow text-center').style('font-size: 20px; font-family: Times New Roman; color: white')
     # it creates a pdf
     async def downloadPdf():
         from fpdf import FPDF,FontFace
@@ -378,20 +469,21 @@ async def home(email:str):
         detailsCard.clear()
         detailsCard.data = i
         with detailsCard:
-            ui.interactive_image(f"data:image/{filetype.guess(i[1]).mime or 'jpeg'};base64,{base64.b64encode(i[1]).decode()}").classes('w-full text-center').style('background-color: #fff; border-radius: 8px; height:320px; width:320px; object-fit:cover;')
+            with ui.column().classes('w-full h-full items-center justify-center'):ui.interactive_image(f"data:image/{filetype.guess(i[1]).mime or 'jpeg'};base64,{base64.b64encode(i[1]).decode()}").classes('w-90 h-90').style('background-color: #fff; border-radius: 8px; object-fit:cover;')
             with ui.grid(columns=2).classes('gap-2 w-full'):
                 for x in i[4:-2]:
                     ui.label(fields[index]).style('font-size: 24px; font-weight: bold; font-family: Times New Roman; color: #333')
                     ui.label(x).style('font-size: 24px; font-weight: bold; font-family: Times New Roman; color: #333')
                     index += 1
-        userCardDetails.set_visibility(True)
         overCoverCard.set_visibility(True)
+    # a function to refresh the master card with the updated data after search or any operation
     def refreshMaster(data):
         with matchDataMaster:
             for i in data:
-                currentUser = ui.card().classes('hover-card p-4').style('background-color: #fff; border-radius: 8px; box-shadow: 0 2px 4px rgba(0, 0, 0, 0.5); height:330px; width:330px; display:flex; flex-direction:column; align-items:center; justify-content:center; cursor:pointer;')
-                with currentUser:ui.image(f"data:image/{filetype.guess(i[1]).mime or 'jpeg'};base64,{base64.b64encode(i[1]).decode()}").style('background-color: #fff; border-radius: 8px; height:300px; width:300px; object-fit:cover;')
+                currentUser = ui.card().classes('hover-card w-full h-90').style('background-color: #fff; border-radius: 8px; box-shadow: 0 2px 4px rgba(0, 0, 0, 0.5)')
+                with currentUser:ui.image(f"data:image/{filetype.guess(i[1]).mime or 'jpeg'};base64,{base64.b64encode(i[1]).decode()}").classes('w-full h-full').style('background-color: #fff; border-radius: 8px')
                 currentUser.on('click',lambda i=i:showCurrentDetails(i))
+    # a function to assign the users in the master card based on the search or any operation
     def assignUsers():
         matchDataMaster.clear()
         dob,gender = data[6],data[7]
@@ -413,30 +505,23 @@ async def home(email:str):
     assignUsers()
     searchInput.on('keydown.enter',lambda x:assignUsers())
     searchInput.on('blur',lambda x:assignUsers())
-    overCoverCard = ui.card().classes('p-4 bg-transparent shadow-none border border-gray-300').style('position: absolute; top:0px; left:0px; width:100vw; height:130vh; margin:0; border-radius:0;background-color: white; backdrop-filter: blur(10px); border-radius: 8px; box-shadow: 0 4px 8px rgba(0, 0, 0, 0.5); padding:20px;')
-    userCardDetails = ui.card().style('position: absolute; top:10px; left:150px; width:1000px; height:780px; background-color: grey; backdrop-filter: blur(10px); border-radius: 8px; box-shadow: 0 4px 8px rgba(0, 0, 0, 0.5); padding:20px;')
+    # from this details card set-up
+    overCoverCard = ui.card().classes('p-4 w-screen h-full bg-transparent shadow-none border border-gray-300 items-center justify-center').style('position: absolute; top:0px; left:0px; margin:0; border-radius:0;background-color: white; backdrop-filter: blur(10px); border-radius: 8px; box-shadow: 0 4px 8px rgba(0, 0, 0, 0.5); padding:20px;')
+    with overCoverCard:userCardDetails = ui.card().classes('w-[60%] h-full items-center justify-center').style('background-color: grey; backdrop-filter: blur(10px); border-radius: 8px; box-shadow: 0 4px 8px rgba(0, 0, 0, 0.5); padding:20px;')
     with userCardDetails:
         ui.label('User Details').classes('w-full text-center').style('font-size: 28px; font-weight: bold; font-family: Times New Roman; color: white')
-        with ui.row().classes('gap-4'):
-            ui.button('back',icon='arrow_back',on_click=lambda:[userCardDetails.set_visibility(False),overCoverCard.set_visibility(False)])
+        with ui.row().classes('w-full items-center justify-between'):
+            ui.button('back',icon='arrow_back',on_click=lambda:overCoverCard.set_visibility(False))
             ui.button('Download',icon='download',on_click=lambda:downloadPdf())
-        detailsCard = ui.card().classes('w-[720px] h-[720px] bg-gray-100 rounded-lg shadow-lg p-4').style('overflow-y:auto;')
+        detailsCard = ui.card().classes('w-full h-full bg-gray-100 rounded-lg shadow-lg p-4 overflow-auto')
         detailsCard.data = None
     overCoverCard.set_visibility(False)
-    userCardDetails.set_visibility(False)
 
 @ui.page('/')
 async def login():
     # fetches admin contact details
-    async def fetchAdmin():
-        try:
-            connection = mysql.connector.connect(host='127.0.0.1',user='root',password='Nikish@2003',database='pentecostmatrimony')
-            cursor = connection.cursor()
-            cursor.execute('''select name,profession,whatsApptelegram from userData where role = "admin"''')
-            result = cursor.fetchall()
-            return result
-        except mysql.connector.Error as error:return None
     ui.page_title('Login Page')
+    global supportLabel
     ui.add_css('''body {background-image: url("/icons/image1.png");background-size: cover;background-position:top center;background-repeat: no-repeat;height: 100vh;}
                .white-input .q-field__label {color: white !important;}
                .white-input .q-field__native {color: white !important;}
@@ -458,7 +543,7 @@ async def login():
             ui.link('Register',target='/register')
     supportLabel = 'Contact us:'
     for i in await fetchAdmin():
-        if i[1]=='1':supportLabel += f' Bro.{i[0]} (Ph no.{i[2]}),'
+        if i[3]=='1':supportLabel += f' Bro.{i[2]} (Ph no.{i[4]}),'
     ui.label(supportLabel[:-1]).classes('absolute bottom-4 left-2').style('font-size: 16px; font-family: Times New Roman; color: white')
 
 ui.run(host='0.0.0.0', port=80)
