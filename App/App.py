@@ -364,12 +364,12 @@ async def home(email:str):
                .hover-card:hover {transform: scale(1.03);box-shadow: 0 10px 25px rgba(0,0,0,0.2);}""")
     verseCard = ui.card().classes('w-full p-4').style('background-color: #f0f0f0; border-radius: 8px; box-shadow: 0 4px 8px rgba(0, 0, 0, 0.5); position:relative; overflow:hidden;')
     versesList = list(verses.keys())
-    def showVerse():currentVerse = random.choice(versesList);verseLabel.set_text(verses[currentVerse]);verse.set_text(currentVerse)
+    async def showVerse():currentVerse = random.choice(versesList);verseLabel.set_text(verses[currentVerse]);verse.set_text(currentVerse)
     with verseCard:
         with ui.row().classes('w-full items-center'):
             verseLabel = ui.label().classes('text-center').style('font-size: 18px; font-style: italic; font-family: Times New Roman; color: black')
             verse = ui.label().classes('text-center').style('font-size: 16px; font-family: Times New Roman; color: blue')
-    showVerse()
+    await showVerse()
     ui.timer(5,showVerse)
     # fetch user data
     async def fetchData():
@@ -484,7 +484,7 @@ async def home(email:str):
                 with currentUser:ui.image(f"data:image/{filetype.guess(i[1]).mime or 'jpeg'};base64,{base64.b64encode(i[1]).decode()}").classes('w-full h-full').style('background-color: #fff; border-radius: 8px')
                 currentUser.on('click',lambda i=i:showCurrentDetails(i))
     # a function to assign the users in the master card based on the search or any operation
-    def assignUsers():
+    async def assignUsers():
         matchDataMaster.clear()
         dob,gender = data[6],data[7]
         async def search():
@@ -502,7 +502,7 @@ async def home(email:str):
             return result
         task = asyncio.create_task(search())
         task.add_done_callback(lambda x:refreshMaster(x.result()))
-    assignUsers()
+    await assignUsers()
     searchInput.on('keydown.enter',lambda x:assignUsers())
     searchInput.on('blur',lambda x:assignUsers())
     # from this details card set-up
