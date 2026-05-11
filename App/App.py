@@ -163,14 +163,14 @@ async def adminOperation():
             connection = mysql.connector.connect(host='127.0.0.1',user='root',password='Nikish@2003',database='pentecostmatrimony')
             cursor = connection.cursor()
             if adminLabel.text=='Add New Admin':
-                for i in adminGrid:print(i)
-                cursor.execute('''insert into userData (Photo,Email,Passwords,Name,Profession,Dob,Gender,Qualification,Height,Income,FamilyOrigin,MaritalStatus,Languages,FatherName,MotherName,ParentsNumber,WhatsAppTelegram,Status,Hometown,CurrentAddress,Siblings,LocalFaithHome,CenterFaithHome,Expectations,requestStatus) VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)''',
-                (None,'needs admin value','encrypted password','name','0',None,None,None,None,None,None,None,None,None,None,None,'phone number',None,None,None,None,None,None,None,None))
+                for i in adminGrid:email,password,name,contact = [x.value for x in i if x.__class__.__name__ == 'Input']
+                cursor.execute('''insert into userData (Email,Passwords,Name,Profession,WhatsAppTelegram,requestStatus,role) VALUES (%s,%s,%s,%s,%s,%s,%s)''',
+                (email,cipher.encrypt(password.encode()).decode('utf-8'),name,'0',contact,'Approved','admin'))
+            elif adminLabel.text=='All Admins':
+                email,password,name,contact = [i.value for i in adminGrid]
+                print(email,password,name,contact)
             else:
-                for i in adminGrid:
-                    name = i._text.split('-')[0]
-                    print(name,i.value)
-                    # cursor.execute('''update userData set name=%s,whatsApptelegram=%s where role='admin' and name=%s''',(adminName.value,adminContact.value,originalName))
+                for i in adminGrid:name,contact = i._text.split('-');cursor.execute('''update userData set Profession=%s where WhatsAppTelegram=%s''',('1' if i.value else '0',contact))
             connection.commit()
             cursor.close();connection.close()
         except mysql.connector.Error as error:ui.notification(f'Database error: {str(error)}',type='negative');return
@@ -205,7 +205,7 @@ async def adminOperation():
             with ui.card().classes('w-full h-full'):
                 ui.button('All Admins',on_click=lambda:changeAdminMenu('All Admins'),icon='group').classes('w-full text-center')
                 ui.button('Add New Admin',on_click=lambda:changeAdminMenu('Add New Admin'),icon='add').classes('w-full text-center')
-                ui.button('Update Admin Contact Details',on_click=lambda:changeAdminMenu('Update Admin Contact Details'),icon='edit').classes('w-full text-center')
+                ui.button('Update Contact Info.',on_click=lambda:changeAdminMenu('Update Contact Info.'),icon='edit').classes('w-full text-center')
             with ui.card().classes('w-full h-full'):
                 adminLabel = ui.label('Add Admin').classes('w-full text-center').style('font-size: 30px; font-weight: bold; font-family: Times New Roman; color: black')
                 adminGrid = ui.card().classes('w-[90%] h-full p-4 mx-auto overflow-auto')
@@ -227,12 +227,7 @@ async def admin():
             connection.commit()
             cursor.close();connection.close()
         except:print('database error')
-    # search field refresh function
-    async def fetchRequiredData():
-        for i in masterLabel.data:
-            if i[fields.index(searchField.value)+4].lower()==searchInput.value.lower():
-                if type=='All Data':print(i[4:-2])
-                else:await assignNewUser(i)
+    # a funtion to show the details of the user in a card
     def showCurrentUserData(currentImage,data):
         detailsCard.clear()
         overCoverCard.set_visibility(1)
@@ -276,39 +271,53 @@ async def admin():
                 ui.image(currentImage).classes('w-full h-full object-cover')
             currentCard.on('click',lambda:showCurrentUserData(currentImage,i[4:-2]))
     # fn to refresh the data in master card
-    async def refreshDataMaster(type,databaseFilter=''):
-        try:
-            connection = mysql.connector.connect(host='127.0.0.1',user='root',password='Nikish@2003',database='pentecostmatrimony')
-            cursor = connection.cursor()
-            if type=='All Data':cursor.execute('select * from userData where role="user"')
-            else:cursor.execute('select * from userData where requestStatus = %s',(databaseFilter,))
-            masterLabel.data = cursor.fetchall()
-            cursor.close()
-            connection.close()
-        except:masterLabel.data = []
-        masterLabel.set_text(type)
+    async def refreshDataMaster(data=0,type='',databaseFilter=''):
+        if type:
+            try:
+                connection = mysql.connector.connect(host='127.0.0.1',user='root',password='Nikish@2003',database='pentecostmatrimony')
+                cursor = connection.cursor()
+                if type=='All Data':cursor.execute('select * from userData where role="user"')
+                else:cursor.execute('select * from userData where requestStatus = %s',(databaseFilter,))
+                masterLabel.data = cursor.fetchall()
+                cursor.close()
+                connection.close()
+            except:masterLabel.data = []
+            masterLabel.set_text(type)
         requestScrollable.clear()
+        matchData = searchInput.value.lower()
         with requestScrollable:
-            if type=='All Data':
+            if masterLabel.text=='All Data':
                 allDataMaster = ui.grid(columns=3).classes('gap-4 w-full')
-                for i in masterLabel.data:await allDataRefresh(allDataMaster,i)
+                if data and matchData:
+                    datum = []
+                    for i in masterLabel.data:
+                        if i[fields.index(searchField.value)+4].lower()==matchData:datum.append(i)
+                    for i in datum:await allDataRefresh(allDataMaster,i)
+                else:
+                    for i in masterLabel.data:await allDataRefresh(allDataMaster,i)
             else:
-                for i in masterLabel.data:await assignNewUser(i)
+                if data and matchData:
+                    datum = []
+                    for i in masterLabel.data:
+                        if i[fields.index(searchField.value)+4].lower()==matchData:datum.append(i)
+                    for i in datum:await assignNewUser(i)
+                else:
+                    for i in masterLabel.data:await assignNewUser(i)
     with ui.row().classes('w-full h-20 items-center'):  # aligns the search and menu in a row
         with ui.button(icon='menu'):
             with ui.menu():
-                ui.menu_item('All Data', on_click=lambda: asyncio.create_task(refreshDataMaster('All Data'))).props('icon=home')
-                ui.menu_item('Pending Request Data', on_click=lambda: asyncio.create_task(refreshDataMaster('Pending Request Data','Pending'))).props('icon=back')
-                ui.menu_item('Rejected Request Data', on_click=lambda: asyncio.create_task(refreshDataMaster('Rejected Request Data','Rejected'))).props('icon=menu')
+                ui.menu_item('All Data', on_click=lambda: asyncio.create_task(refreshDataMaster(type='All Data'))).props('icon=home')
+                ui.menu_item('Pending Request Data', on_click=lambda: asyncio.create_task(refreshDataMaster(type='Pending Request Data',databaseFilter='Pending'))).props('icon=back')
+                ui.menu_item('Rejected Request Data', on_click=lambda: asyncio.create_task(refreshDataMaster(type='Rejected Request Data',databaseFilter='Rejected'))).props('icon=menu')
                 ui.menu_item('Admin Operation',on_click=lambda:ui.navigate.to('/adminOperation')).props('icon=settings')
                 # ui.menu_item('Married Data',)
         searchInput,searchField = searchWithFields()
-        searchInput.on('keydown.enter',fetchRequiredData);searchInput.on('blur',fetchRequiredData)
+        searchInput.on('keydown.enter',lambda:refreshDataMaster(1));searchInput.on('blur',lambda:refreshDataMaster(1))
     with ui.card().classes('w-full h-screen p-4').style('background-color: grey; border-radius: 8px; box-shadow: 0 4px 8px rgba(0, 0, 0, 0.5)'):    # a card to hold all the data
         masterLabel = ui.label('All Data').classes('w-full text-center').style('font-size: 30px; font-weight: bold; font-family: Times New Roman; color: black')
         masterLabel.data = []
         requestScrollable = ui.card().classes('w-full h-full overflow-auto')
-        asyncio.create_task(refreshDataMaster('All Data'))
+        asyncio.create_task(refreshDataMaster(type='All Data'))
     overCoverCard = ui.card().classes('p-4 w-screen h-full bg-transparent shadow-none border border-gray-300').style('position: absolute; top:0px; left:0px; margin:0; border-radius:0;background-color: white; backdrop-filter: blur(10px); border-radius: 8px; box-shadow: 0 4px 8px rgba(0, 0, 0, 0.5); padding:20px;')  # an overlay card under the details master
     with overCoverCard:
         with ui.card().classes('w-full h-full p-4 mx-auto overflow-auto').style('background-color: #f0f0f0; border-radius: 8px; box-shadow: 0 4px 8px rgba(0, 0, 0, 0.5);'):
@@ -403,6 +412,7 @@ async def home(email:str):
         else:widgets[i].set_value(data[index])
         index += 1
         if index in [7,8]:widgets[i].disable()
+    # a function to update the data in the database
     async def updateData(data):
         def saveData():
             try:
@@ -413,6 +423,7 @@ async def home(email:str):
                 cursor.close();connection.close()
             except mysql.connector.Error as e:print(e)
         await run.io_bound(saveData)
+    # a function to handle the submit button click and update the data in the database
     async def handleSubmit():
         if anyEmptyField(userForm,userForm.photo,chips.lists):ui.notification('Please fill all the fields')
         else:
@@ -426,7 +437,7 @@ async def home(email:str):
                 else:data += (widgets[x].value,)
             data += ('Approved',email)
             await updateData(data);ui.notification('Details updated successfully!')
-    with ui.row().classes('items-center justify-center'):ui.button('Update',icon='edit',on_click=handleSubmit);ui.label(supportLabel).classes('flex-grow text-center').style('font-size: 20px; font-family: Times New Roman; color: white')
+    with ui.grid(columns='20% 80%').classes('w-full items-center justify-center'):ui.button('Update',icon='edit',on_click=handleSubmit);ui.label(supportLabel[:-1]).classes('flex-grow text-center').style('font-size: 17px; font-family: Times New Roman; color: black')
     # it creates a pdf
     async def downloadPdf():
         from fpdf import FPDF,FontFace
@@ -463,7 +474,7 @@ async def home(email:str):
         pdf.write_html('<p align="center">Clarification on your biodata to any of these nos. <b>Bro. D. Annadoss</b> (Telegram no. 9884153831), <b>Bro. Sekar</b> (Telegram no. 9940408879) for TPM Matrimony.</p>')
         pdfBytes = bytes(pdf.output(dest='S'))
         ui.download(pdfBytes,filename=f'{data[1]}_biodata.pdf')
-    # 
+    # a function that creates a details card to show the details of the user
     def showCurrentDetails(i):
         index = 0
         detailsCard.clear()
