@@ -28,12 +28,87 @@
 # pdf.write_html('<p align="center">Clarification on your biodata to any of these nos. <b>Bro. D. Annadoss</b> (Telegram no. 9884153831), <b>Bro. Sekar</b> (Telegram no. 9940408879) for TPM Matrimony.</p>')
 # pdf.output('biodata.pdf')
 
+# from nicegui import ui
+
+# def siblingW():
+#     with ui.card().classes('width-1/2') as siblingsWidget:
+#         def addSibling(i):
+#             with holderCard:
+#                 row = ui.grid(columns=2).classes('gap-2 w-full')
+#                 with row:ui.label(i);ui.button('',icon='delete',on_click=lambda row=row:holderCard.remove(row)).classes('ml-auto')
+#         holderCard = ui.card().style('width: 290px;height: 90px;overflow-y: auto;')
+#         with holderCard:pass
+#         with ui.grid(columns=2).classes('gap-2 w-full'):
+#             relationInput = ui.select(['Elder Brother','Elder Sister','Younger Brother','Younger Sister'],value='Elder Brother')
+#             status = ui.checkbox('Married')
+#         ui.button('Add',icon='add',on_click=lambda:addSibling(relationInput.value+(' - Married' if status.value else ' - Single'))).style('display:block; margin: 0 auto;')
+#         def addData(data):
+#             for i in data:addSibling(i)
+#         siblingsWidget.addData = addData
+#         return siblingsWidget
+
+# @ui.page('/')
+# def main():
+#     siblingsWidget = siblingW()
+#     ui.button('Apply',on_click=lambda:siblingsWidget.addData(['Elder Brother - Married','Elder Brother - Single','Younger Sister - Single']))
+    
+# ui.run('0.0.0.0',port=80)
+
+# from cryptography.fernet import Fernet
+# key = b'nWjYyxV8EC5sbgkOMV_YekqyERDo1j2P4SAA_WNujVI='
+# cipher = Fernet(key)
+# print(cipher.encrypt('admin123'.encode()).decode('utf-8'))
 
 from nicegui import ui
 
-@ui.page('/')
-def main_page():
-    ui.dark_mode().enable()
-    ui.label('Hello, World!')
+data = [
+    {'id': 1, 'name': 'Nikish', 'email': 'nikish@mail.com', 'phone': '9876543210'},
+    {'id': 2, 'name': 'Daniel', 'email': 'daniel@mail.com', 'phone': '9123456780'},
+    {'id': 3, 'name': 'John', 'email': 'john@mail.com', 'phone': '9988776655'},
+]
+
+columns = [
+    {'name': 'id', 'label': 'ID', 'field': 'id'},
+    {'name': 'name', 'label': 'Name', 'field': 'name'},
+    {'name': 'email', 'label': 'Email', 'field': 'email'},
+    {'name': 'phone', 'label': 'Phone', 'field': 'phone'},
+]
+
+table = ui.table(
+    columns=columns,
+    rows=data,
+    row_key='id'
+).classes('w-full')
+
+
+def open_edit_dialog(e):
+    row = e.args
+
+    with ui.dialog() as dialog, ui.card().classes('w-96'):
+        ui.label('Update Record').classes('text-xl font-bold')
+
+        name = ui.input('Name')
+        email = ui.input('Email')
+        phone = ui.input('Phone').props('maxlength=10')
+
+        def save():
+            row['name'] = name.value
+            row['email'] = email.value
+            row['phone'] = phone.value
+
+            table.update()
+            dialog.close()
+            ui.notify('Updated Successfully')
+
+        with ui.row().classes('justify-end w-full'):
+            ui.button('Cancel', on_click=dialog.close).props('flat')
+            ui.button('Save', on_click=save).props('color=green')
+
+    dialog.open()
+
+
+table.on('rowClick', open_edit_dialog)
+
+ui.label('Click any row to edit').classes('text-grey')
 
 ui.run()
