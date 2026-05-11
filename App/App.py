@@ -135,6 +135,7 @@ def test():
 @ui.page('/admin')
 def admin():
     ui.page_title('Admin')
+    ui.dark_mode().enable()
     async def update(email,value):
         try:
             connection = mysql.connector.connect(host='127.0.0.1',user='root',password='Nikish@2003',database='pentecostmatrimony')
@@ -238,6 +239,7 @@ def personnelForm():
 @ui.page('/Home/{email}')
 async def home(email:str):
     ui.page_title('Pentacost Matrimony')
+    ui.dark_mode().enable()
     import random
     verses = {'Genesis 2:18':"The LORD God said, 'It is not good for the man to be alone. I will make a helper suitable for him'",'Mark 10:6-8':"‘made them male and female.For this reason a man will leave his father and mother and be united to his wife,and the two will become one flesh.’",
               'Matthew 19:6':"Therefore what God has joined together, let no one separate.",'Proverbs 5:18':"“He who finds a wife finds what is good and receives favor from the Lord.”",'Proverbs 31:10':"“A wife of noble character who can find? She is worth far more than rubies.”",

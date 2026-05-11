@@ -29,27 +29,11 @@
 # pdf.output('biodata.pdf')
 
 
-from collections import defaultdict
-data = defaultdict(int)
-s = "aeiaaioooa"
-order = []
-for i in s:
-    if i in 'aeiou':
-        data[i] += 1
-        if i not in order:order.append(i)
-sortedList = sorted(data,key=lambda x:data[x])[::-1]
-result = ''
-for i in s:
-    if i in 'aeiou':
-        primary = sortedList[0]
-        if primary not in sortedList:
-            if len(sortedList)>1:
-                first , second = sortedList[:2]
-                if data[first]==data[second]:
-                    if first in order[order.index(second):]:primary=second
-                    else:primary=first
-        data[primary] -= 1
-        if data[primary]==0:sortedList = sortedList[1:]
-        result += primary
-    else:result += i
-print(result)
+from nicegui import ui
+
+@ui.page('/')
+def main_page():
+    ui.dark_mode().enable()
+    ui.label('Hello, World!')
+
+ui.run()
