@@ -286,23 +286,15 @@ async def admin():
         requestScrollable.clear()
         matchData = searchInput.value.lower()
         with requestScrollable:
-            if masterLabel.text=='All Data':
-                allDataMaster = ui.grid(columns=3).classes('gap-4 w-full')
-                if data and matchData:
-                    datum = []
-                    for i in masterLabel.data:
-                        if i[fields.index(searchField.value)+4].lower()==matchData:datum.append(i)
-                    for i in datum:await allDataRefresh(allDataMaster,i)
-                else:
-                    for i in masterLabel.data:await allDataRefresh(allDataMaster,i)
+            formType = masterLabel.text
+            if formType=='All Data':allDataMaster = ui.grid(columns=3).classes('gap-4 w-full')
+            if data and matchData:
+                datum = []
+                for i in masterLabel.data:
+                    if i[fields.index(searchField.value)+4].lower()==matchData:datum.append(i)
+                for i in datum:await allDataRefresh(allDataMaster,i) if formType=='All Data' else await assignNewUser(i)
             else:
-                if data and matchData:
-                    datum = []
-                    for i in masterLabel.data:
-                        if i[fields.index(searchField.value)+4].lower()==matchData:datum.append(i)
-                    for i in datum:await assignNewUser(i)
-                else:
-                    for i in masterLabel.data:await assignNewUser(i)
+                for i in masterLabel.data:await allDataRefresh(allDataMaster,i) if formType=='All Data' else await assignNewUser(i)
     with ui.row().classes('w-full h-20 items-center'):  # aligns the search and menu in a row
         with ui.button(icon='menu'):
             with ui.menu():
