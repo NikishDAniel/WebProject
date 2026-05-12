@@ -216,8 +216,6 @@ async def adminOperation():
 @ui.page('/admin')
 async def admin():
     ui.page_title('Admin')
-    ui.add_css('''.hover-card {transition: all 0.3s ease;}
-               .hover-card:hover {transform: scale(1.03);box-shadow: 0 10px 25px rgba(0,0,0,0.2);}''')
     # a function to update the request status of the user in the database when the admin approves or rejects a request
     async def update(email,value):
         try:
@@ -227,98 +225,47 @@ async def admin():
             connection.commit()
             cursor.close();connection.close()
         except:print('database error')
-    # a funtion to show the details of the user in a card
-    def showCurrentUserData(currentImage,data):
-        detailsCard.clear()
-        overCoverCard.set_visibility(1)
-        with detailsCard:
-            ui.interactive_image(currentImage).classes('max-w-full max-h-screen object-contain')
-            index = 0
-            with ui.grid(columns=2).classes('gap-2 w-full'):
-                for i in data:
-                    ui.label(fields[index]).style('font-size: 24px; font-weight: bold; font-family: Times New Roman; color: #333')
-                    ui.label(i).style('font-size: 20px; font-family: Times New Roman; color: #333')
-                    index += 1
-    # a function to create card for each user in the admin panel with their details and approve/reject buttons
-    async def assignNewUser(i):
-        currentUserMaster = ui.row().classes('w-full items-center gap-2')
-        with currentUserMaster:
-            currentUserCard = ui.card().classes('flex-grow w-80 p-4 cursor-pointer')
-            currentUserCard.status = 0
-            def setStatus(currentUserCard):
-                currentUserCard.status = not currentUserCard.status
-                details.set_visibility(currentUserCard.status)
-            currentUserCard.on('click',lambda:setStatus(currentUserCard))
-            with currentUserCard:
-                ui.image(f"data:image/{filetype.guess(i[1]).mime or 'jpeg'};base64,{base64.b64encode(i[1]).decode()}").classes('w-38 h-38 rounded-full object-cover')
-                ui.label(i[2]).style('font-size: 24px; font-weight: bold; font-family: Times New Roman; color: blue')
-                details = ui.grid(columns=2).classes('gap-2 w-full')
-                details.set_visibility(False)
-                with details:
-                    index = 0
-                    for data in i[4:-2]:ui.label(fields[index]).style('font-size: 20px; font-weight: bold; font-family: Times New Roman');ui.label(data).classes('break-words').style('font-size: 20px; font-family: Times New Roman');index += 1
-            def removeUser():asyncio.create_task(update(i[2],'Rejected'));currentUserMaster.remove(currentUserCard);currentUserMaster.remove(approve);currentUserMaster.remove(reject)
-            def updater():
-                asyncio.create_task(update(i[2],'Approved'));ui.notification(f'{i[2]} approved successfully!');currentUserMaster.remove(currentUserCard);currentUserMaster.remove(approve)
-                if masterLabel.text=='Pending Request Data':currentUserMaster.remove(reject)
-            approve = ui.button('Approve',icon='check',on_click=updater).props('rounded outline color=green')
-            if masterLabel.text=='Pending Request Data':reject = ui.button('Reject ',icon='clear',on_click=removeUser).props('rounded outline color=red')
-    # here assigns the all data of the users
-    async def allDataRefresh(allDataMaster,i):
-        with allDataMaster:
-            with ui.card().classes('w-full aspect-square p-0 overflow-hidden hover-card') as currentCard:
-                currentImage = f"data:image/{filetype.guess(i[1]).mime or 'jpeg'};base64,{base64.b64encode(i[1]).decode()}"
-                ui.image(currentImage).classes('w-full h-full object-cover')
-            currentCard.on('click',lambda:showCurrentUserData(currentImage,i[4:-2]))
-    # fn to refresh the data in master card
-    async def refreshDataMaster(data=0,type='',databaseFilter=''):
-        if type:
+    async def displayDetails(ids):
+        with ui.dialog() as detailsCard,ui.card().classes('w-full h-screen overflow-auto'):
+            ui.label('User Details').classes('w-full text-center').style('font-size: 30px; font-weight: bold; font-family: Times New Roman; color: black')
             try:
                 connection = mysql.connector.connect(host='127.0.0.1',user='root',password='Nikish@2003',database='pentecostmatrimony')
                 cursor = connection.cursor()
-                if type=='All Data':cursor.execute('select * from userData where role="user"')
-                else:cursor.execute('select * from userData where requestStatus = %s',(databaseFilter,))
-                masterLabel.data = cursor.fetchall()
-                cursor.close()
-                connection.close()
-            except:masterLabel.data = []
-            masterLabel.set_text(type)
-        requestScrollable.clear()
-        matchData = searchInput.value.lower()
-        with requestScrollable:
-            formType = masterLabel.text
-            if formType=='All Data':allDataMaster = ui.grid(columns=3).classes('gap-4 w-full')
-            if data and matchData:
-                datum = []
-                for i in masterLabel.data:
-                    if i[fields.index(searchField.value)+4].lower()==matchData:datum.append(i)
-                for i in datum:await allDataRefresh(allDataMaster,i) if formType=='All Data' else await assignNewUser(i)
-            else:
-                for i in masterLabel.data:await allDataRefresh(allDataMaster,i) if formType=='All Data' else await assignNewUser(i)
+                cursor.execute('select * from userData where id = %s',(ids,))
+                data = cursor.fetchone()
+                cursor.close();connection.close()
+            except mysql.connector.Error as error:ui.notification(f'Database error: {str(error)}',type='negative');return
+            ui.image(f"data:image/{filetype.guess(data[1]).mime or 'jpeg'};base64,{base64.b64encode(data[1]).decode()}").classes('w-60 h-60 rounded-full mx-auto')
+            for i in data[4:-2]:ui.label(i).classes('w-full text-center').style('font-size: 24px; font-weight: bold; font-family: Times New Roman; color: blue')
+            ui.button('Back',icon='arrow_back',on_click=detailsCard.close).props('color=red rounded outline').classes('w-full mt-4')
+            detailsCard.open()
+    async def refreshTable(type='',databaseFilter=''):
+        try:
+            connection = mysql.connector.connect(host='127.0.0.1',user='root',password='Nikish@2003',database='pentecostmatrimony')
+            cursor = connection.cursor(dictionary=True)
+            if type=='All Data':cursor.execute('select id,email,name from userData where role="user"')
+            else:cursor.execute('select id,email,name from userData where requestStatus = %s',(databaseFilter,))
+            data = cursor.fetchall()
+            cursor.close();connection.close()
+        except mysql.connector.Error as error:ui.notification(f'Database error: {str(error)}',type='negative');return
+        print(data)
+        currentTable.rows = data
+        currentTable.update()
     with ui.row().classes('w-full h-20 items-center'):  # aligns the search and menu in a row
         with ui.button(icon='menu'):
             with ui.menu():
-                ui.menu_item('All Data', on_click=lambda: asyncio.create_task(refreshDataMaster(type='All Data'))).props('icon=home')
-                ui.menu_item('Pending Request Data', on_click=lambda: asyncio.create_task(refreshDataMaster(type='Pending Request Data',databaseFilter='Pending'))).props('icon=back')
-                ui.menu_item('Rejected Request Data', on_click=lambda: asyncio.create_task(refreshDataMaster(type='Rejected Request Data',databaseFilter='Rejected'))).props('icon=menu')
+                ui.menu_item('All Data', on_click=lambda: refreshTable(type='All Data')).props('icon=home')
+                ui.menu_item('Pending Request Data', on_click=lambda: asyncio.create_task(refreshTable(type='Pending Request Data',databaseFilter='Pending'))).props('icon=back')
+                ui.menu_item('Rejected Request Data', on_click=lambda: asyncio.create_task(refreshTable(type='Rejected Request Data',databaseFilter='Rejected'))).props('icon=menu')
                 ui.menu_item('Admin Operation',on_click=lambda:ui.navigate.to('/adminOperation')).props('icon=settings')
                 # ui.menu_item('Married Data',)
         searchInput,searchField = searchWithFields()
-        searchInput.on('keydown.enter',lambda:refreshDataMaster(1));searchInput.on('blur',lambda:refreshDataMaster(1))
-    with ui.card().classes('w-full h-screen p-4').style('background-color: grey; border-radius: 8px; box-shadow: 0 4px 8px rgba(0, 0, 0, 0.5)'):    # a card to hold all the data
+    with ui.card().classes('w-full h-screen'):
         masterLabel = ui.label('All Data').classes('w-full text-center').style('font-size: 30px; font-weight: bold; font-family: Times New Roman; color: black')
-        masterLabel.data = []
-        requestScrollable = ui.card().classes('w-full h-full overflow-auto')
-        asyncio.create_task(refreshDataMaster(type='All Data'))
-    overCoverCard = ui.card().classes('p-4 w-screen h-full bg-transparent shadow-none border border-gray-300').style('position: absolute; top:0px; left:0px; margin:0; border-radius:0;background-color: white; backdrop-filter: blur(10px); border-radius: 8px; box-shadow: 0 4px 8px rgba(0, 0, 0, 0.5); padding:20px;')  # an overlay card under the details master
-    with overCoverCard:
-        with ui.card().classes('w-full h-full p-4 mx-auto overflow-auto').style('background-color: #f0f0f0; border-radius: 8px; box-shadow: 0 4px 8px rgba(0, 0, 0, 0.5);'):
-            with ui.row().classes('w-full items-center no-wrap gap-2'):
-                ui.button(text='Back',icon='arrow_back',on_click=lambda:overCoverCard.set_visibility(0)).props('color=red rounded outline')
-                ui.label('User Details').classes('flex-grow text-center').style('font-size: 30px; font-weight: bold; font-family: Times New Roman; color: black')
-                ui.button('Delete',icon='delete',).props('color=red rounded outline')
-            detailsCard = ui.card().classes('w-full h-full p-4 mx-auto overflow-auto')
-    overCoverCard.set_visibility(0)
+        tableColumn = [{'name': 'id', 'label': 'ID', 'field': 'id'},{'name': 'email', 'label': 'Email', 'field': 'email'},{'name': 'name', 'label': 'Name', 'field': 'name'}]
+        currentTable = ui.table(columns=tableColumn,rows=[],title='User Data',pagination=25).classes('w-full h-screen')
+        await refreshTable(type='All Data')
+        currentTable.on('rowClick',lambda e:displayDetails(e.args[1]['id']))
 
 @ui.page('/register')
 def personnelForm():
