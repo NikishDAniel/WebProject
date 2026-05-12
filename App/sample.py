@@ -59,56 +59,8 @@
 # cipher = Fernet(key)
 # print(cipher.encrypt('admin123'.encode()).decode('utf-8'))
 
-from nicegui import ui
+import tkinter as tk
+from tkinter import font
 
-data = [
-    {'id': 1, 'name': 'Nikish', 'email': 'nikish@mail.com', 'phone': '9876543210'},
-    {'id': 2, 'name': 'Daniel', 'email': 'daniel@mail.com', 'phone': '9123456780'},
-    {'id': 3, 'name': 'John', 'email': 'john@mail.com', 'phone': '9988776655'},
-]
-
-columns = [
-    {'name': 'id', 'label': 'ID', 'field': 'id'},
-    {'name': 'name', 'label': 'Name', 'field': 'name'},
-    {'name': 'email', 'label': 'Email', 'field': 'email'},
-    {'name': 'phone', 'label': 'Phone', 'field': 'phone'},
-]
-
-table = ui.table(
-    columns=columns,
-    rows=data,
-    row_key='id'
-).classes('w-full')
-
-
-def open_edit_dialog(e):
-    row = e.args
-
-    with ui.dialog() as dialog, ui.card().classes('w-96'):
-        ui.label('Update Record').classes('text-xl font-bold')
-
-        name = ui.input('Name')
-        email = ui.input('Email')
-        phone = ui.input('Phone').props('maxlength=10')
-
-        def save():
-            row['name'] = name.value
-            row['email'] = email.value
-            row['phone'] = phone.value
-
-            table.update()
-            dialog.close()
-            ui.notify('Updated Successfully')
-
-        with ui.row().classes('justify-end w-full'):
-            ui.button('Cancel', on_click=dialog.close).props('flat')
-            ui.button('Save', on_click=save).props('color=green')
-
-    dialog.open()
-
-
-table.on('rowClick', open_edit_dialog)
-
-ui.label('Click any row to edit').classes('text-grey')
-
-ui.run()
+root = tk.Tk()
+print(font.families())
