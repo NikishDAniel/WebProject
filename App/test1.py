@@ -228,13 +228,16 @@ async def admin():
                .custom-table tbody td {font-family: "Times New Roman";font-size: 18px;;text-align: center}''')
     # fn to update the request status of the user in the database when the admin approves or rejects a request
     async def update(id,value):
+        notifier = ui.notification(message='Saving..',spinner=True,timeout=None,type='ongoing')
         try:
             connection = mysql.connector.connect(host='127.0.0.1',user='root',password='Nikish@2003',database='pentecostmatrimony')
             cursor = connection.cursor()
             cursor.execute('''update userData set requestStatus = %s where id = %s''',(value,id))
             connection.commit()
             cursor.close();connection.close()
-        except mysql.connector.Error as e:ui.notification(f'Database error: {str(e)}',type='negative');return
+            notifier.message='Saved';notifier.spinner=False;notifier.type='positive';notifier.timeout=2
+        except mysql.connector.Error as e:
+            notifier.message=f'Database error: {str(e)}';notifier.type='negative';notifier.spinner=False;notifier.timeout=2;return
     # fn to show the details of the user in a dialog when the admin clicks on a row in the table
     async def showDetails(ids):
         try:
