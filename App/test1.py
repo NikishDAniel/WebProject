@@ -21,7 +21,7 @@ async def fetchAdmin():
     try:
         connection = mysql.connector.connect(host='127.0.0.1',user='root',password='Nikish@2003',database='pentecostmatrimony')
         cursor = connection.cursor()
-        cursor.execute('''select email,passwords,name,profession,WhatsAppTelegram from userData where role = "admin"''')
+        cursor.execute('''select id,email,passwords,name,profession,WhatsAppTelegram from userData where role = "admin"''')
         result = cursor.fetchall()
         return result
     except mysql.connector.Error as error:return None
@@ -158,7 +158,7 @@ def form(textColor,bgColor,width='60'):
 async def adminOperation():
     ui.page_title('Admin Operation')
     dataFields = ['Email','Password','Name','Contact Details']
-    async def updateAdmin():
+    async def updateAdmin(id='',state=''):
         try:
             connection = mysql.connector.connect(host='127.0.0.1',user='root',password='Nikish@2003',database='pentecostmatrimony')
             cursor = connection.cursor()
@@ -167,22 +167,26 @@ async def adminOperation():
                 cursor.execute('''insert into userData (Email,Passwords,Name,Profession,WhatsAppTelegram,requestStatus,role) VALUES (%s,%s,%s,%s,%s,%s,%s)''',
                 (email,cipher.encrypt(password.encode()).decode('utf-8'),name,'0',contact,'Approved','admin'))
             elif adminLabel.text=='All Admins':
-                email,password,name,contact = [i.value for i in adminGrid]
-                print(email,password,name,contact)
+                email,password,name,contact = [i.value for i in adminGrid if hasattr(i, 'value')]
+                cursor.execute('''update userData set Email=%s,Passwords=%s,Name=%s,Profession=%s where id=%s''',(email,cipher.encrypt(password.encode()).decode('utf-8'),name,state,id))
             else:
                 for i in adminGrid:name,contact = i._text.split('-');cursor.execute('''update userData set Profession=%s where WhatsAppTelegram=%s''',('1' if i.value else '0',contact))
             connection.commit()
             cursor.close();connection.close()
         except mysql.connector.Error as error:ui.notification(f'Database error: {str(error)}',type='negative');return
+    # function to show the update form
     def changeAdminData(i):
         adminGrid.clear()
-        index = 0
+        index = 1
         with adminGrid:
             with ui.grid(columns='50% 50%').classes('gap-2 w-full'):
                 ui.button('Back',icon='arrow_back',on_click=lambda:changeAdminMenu('All Admins')).props('color=red rounded outline').classes('w-full')
-                ui.button('Save',icon='save').props('color=green rounded outline').classes('w-full')
-            for x in dataFields:ui.input(label=x,value=i[index+(1 if x=='Contact Details' else 0)]).classes('w-full').style('font-size: 24px; font-weight: bold; font-family: Times New Roman; color: blue');index += 1
-    def showAdminData(i):ui.label(i[2]).style('font-size: 24px; font-weight: bold; font-family: Times New Roman; color: blue');ui.label(i[4]).style('font-size: 20px; font-family: Times New Roman; color: black');ui.button('Edit',icon='edit',on_click=lambda:changeAdminData(i)).props('color=blue rounded outline');ui.button('Delete',icon='delete').props('color=red rounded outline')
+                ui.button('Save',icon='save',on_click=lambda:updateAdmin(i[0],i[4])).props('color=green rounded outline').classes('w-full')
+            for x in dataFields:
+                dataValue = i[index+(1 if x=='Contact Details' else 0)]
+                if index==2:dataValue = cipher.decrypt(dataValue.encode('utf-8')).decode()
+                ui.input(label=x,value=dataValue).classes('w-full').style('font-size: 24px; font-weight: bold; font-family: Times New Roman; color: blue');index += 1
+    def showAdminData(i):ui.label(i[3]).style('font-size: 24px; font-weight: bold; font-family: Times New Roman; color: blue');ui.label(i[5]).style('font-size: 20px; font-family: Times New Roman; color: black');ui.button('Edit',icon='edit',on_click=lambda:changeAdminData(i)).props('color=blue rounded outline');ui.button('Delete',icon='delete').props('color=red rounded outline')
     async def changeAdminMenu(type):
         adminLabel.set_text(type)
         adminGrid.clear()
@@ -199,7 +203,7 @@ async def adminOperation():
                         with ui.grid(columns='30% 30% 18% 20%').classes('w-full items-center gap-2'):showAdminData(i)
                     else:
                         saveButton.set_visibility(1)
-                        ui.checkbox(text=f'{i[2]} - {i[4]}',value=True if i[3]=='1' else False).style('font-weight: bold; font-family: Times New Roman; color: black; font-size: 24px;')
+                        ui.checkbox(text=f'{i[3]} - {i[5]}',value=True if i[4]=='1' else False).style('font-weight: bold; font-family: Times New Roman; color: black; font-size: 24px;')
     with ui.card().classes('w-full h-screen'):
         with ui.grid(columns='30% 70%').classes('w-full h-full gap-1'):
             with ui.card().classes('w-full h-full'):
@@ -227,6 +231,7 @@ async def admin():
             connection.commit()
             cursor.close();connection.close()
         except mysql.connector.Error as e:ui.notification(f'Database error: {str(e)}',type='negative');return
+    # function to show the details of the user in a dialog when the admin clicks on a row in the table
     async def showDetails(ids):
         try:
             connection = mysql.connector.connect(host='127.0.0.1',user='root',password='Nikish@2003',database='pentecostmatrimony')
@@ -519,7 +524,7 @@ async def login():
             ui.link('Register',target='/register')
     supportLabel = 'Contact us:'
     for i in await fetchAdmin():
-        if i[3]=='1':supportLabel += f' Bro.{i[2]} (Ph no.{i[4]}),'
+        if i[4]=='1':supportLabel += f' Bro.{i[3]} (Ph no.{i[5]}),'
     ui.label(supportLabel[:-1]).classes('absolute bottom-4 left-2').style('font-size: 16px; font-family: Times New Roman; color: white')
 
 ui.run(host='0.0.0.0', port=80)
