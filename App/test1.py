@@ -26,7 +26,7 @@ async def fetchAdmin():
         return result
     except mysql.connector.Error as error:return None
 
-# a function to verify the email at the time of login
+# fn to verify the email at the time of login
 async def emailValidation(email='',check=0):
     container = ui.column()
     def fetchData():
@@ -47,15 +47,15 @@ async def emailValidation(email='',check=0):
         else:return currentUserData
     
 # checks the match of the password
-def checkUser(data,passwordEntry):
+def checkUser(notifier,data,passwordEntry):
     email,validPassword,role,requestStatus = data
     if cipher.decrypt(validPassword.encode('utf-8')).decode()==passwordEntry:
         if role=='admin':ui.navigate.to('/admin')
         else:
-            if requestStatus=='Pending':ui.notification("Your request's approval is pending.")
-            elif requestStatus=='Rejected':ui.notification('Your request is rejected')
-            else:ui.navigate.to(f'/Home/{email}')
-    else:ui.notification('Please enter the email and password correctly')
+            if requestStatus=='Pending':notifier.message='Your request is still pending';notifier.type='warning';notifier.spinner=False;notifier.timeout=2
+            elif requestStatus=='Rejected':notifier.message='Your request is rejected';notifier.type='negative';notifier.spinner=False;notifier.timeout=2
+            else:notifier.message='Login successful!';notifier.type='positive';notifier.spinner=False;notifier.timeout=2;ui.navigate.to(f'/Home/{email}')
+    else:notifier.message='Please enter the email and password correctly';notifier.type='negative';notifier.spinner=False;notifier.timeout=2
 
 ui.add_head_html('''
                 <link rel="preload" href="/icons/ALGERIA.TTF" as="font" type="font/ttf" crossorigin>
@@ -68,7 +68,7 @@ ui.add_head_html('''
 def searchWithFields():
     with ui.card().classes('w-fit p-2 h-18 mx-auto').style(f'background-color: #f0f0f0; border-radius: 8px; box-shadow: 0 4px 8px rgba(0, 0, 0, 0.5);'):
         with ui.row().classes('items-center gap-2'):
-            searchInput = ui.input(label='Search by Email').style('width:350px')
+            searchInput = ui.input(label='Search by Id').style('width:350px')
             with searchInput.add_slot('prepend'):ui.icon('search').classes('text-2xl text-gray-500')
             ui.label('Category').classes('text-gray-500')
             searchField = ui.select(options=['Id','Email']+fields,value='Id',on_change=lambda:searchInput.set_label('Search by '+searchField.value)).style('width:200px')
@@ -158,7 +158,9 @@ def form(textColor,bgColor,width='60'):
 async def adminOperation():
     ui.page_title('Admin Operation')
     dataFields = ['Email','Password','Name','Contact Details']
+    # fn to update the data
     async def updateAdmin(id='',state=''):
+        notifier = ui.notification(message='Saving data...',type='ongoing',timeout=None,spinner=True)
         try:
             connection = mysql.connector.connect(host='127.0.0.1',user='root',password='Nikish@2003',database='pentecostmatrimony')
             cursor = connection.cursor()
@@ -168,13 +170,14 @@ async def adminOperation():
                 (email,cipher.encrypt(password.encode()).decode('utf-8'),name,'0',contact,'Approved','admin'))
             elif adminLabel.text=='All Admins':
                 email,password,name,contact = [i.value for i in adminGrid if hasattr(i, 'value')]
-                cursor.execute('''update userData set Email=%s,Passwords=%s,Name=%s,Profession=%s where id=%s''',(email,cipher.encrypt(password.encode()).decode('utf-8'),name,state,id))
+                cursor.execute('''update userData set Email=%s,Passwords=%s,Name=%s,Profession=%s,WhatsAppTelegram=%s where id=%s''',(email,cipher.encrypt(password.encode()).decode('utf-8'),name,state,contact,id))
             else:
                 for i in adminGrid:name,contact = i._text.split('-');cursor.execute('''update userData set Profession=%s where WhatsAppTelegram=%s''',('1' if i.value else '0',contact))
             connection.commit()
             cursor.close();connection.close()
-        except mysql.connector.Error as error:ui.notification(f'Database error: {str(error)}',type='negative');return
-    # function to show the update form
+        except mysql.connector.Error as error:notifier.message=f'Database error: {str(error)}';notifier.type='negative';notifier.spinner=False;notifier.timeout=2;return
+        notifier.message='Data saved successfully!';notifier.type='positive';notifier.spinner=False;notifier.timeout=2
+    # fn to show the update form
     def changeAdminData(i):
         adminGrid.clear()
         index = 1
@@ -187,6 +190,7 @@ async def adminOperation():
                 if index==2:dataValue = cipher.decrypt(dataValue.encode('utf-8')).decode()
                 ui.input(label=x,value=dataValue).classes('w-full').style('font-size: 24px; font-weight: bold; font-family: Times New Roman; color: blue');index += 1
     def showAdminData(i):ui.label(i[3]).style('font-size: 24px; font-weight: bold; font-family: Times New Roman; color: blue');ui.label(i[5]).style('font-size: 20px; font-family: Times New Roman; color: black');ui.button('Edit',icon='edit',on_click=lambda:changeAdminData(i)).props('color=blue rounded outline');ui.button('Delete',icon='delete').props('color=red rounded outline')
+    # fn to change the admin operation scrollable widget based on the selection
     async def changeAdminMenu(type):
         adminLabel.set_text(type)
         adminGrid.clear()
@@ -222,7 +226,7 @@ async def admin():
     ui.page_title('Admin')
     ui.add_css('''.custom-table thead th {font-family: "Times New Roman";font-size: 24px;font-weight: bold;text-align: center;color: blue;}
                .custom-table tbody td {font-family: "Times New Roman";font-size: 18px;;text-align: center}''')
-    # a function to update the request status of the user in the database when the admin approves or rejects a request
+    # fn to update the request status of the user in the database when the admin approves or rejects a request
     async def update(id,value):
         try:
             connection = mysql.connector.connect(host='127.0.0.1',user='root',password='Nikish@2003',database='pentecostmatrimony')
@@ -231,7 +235,7 @@ async def admin():
             connection.commit()
             cursor.close();connection.close()
         except mysql.connector.Error as e:ui.notification(f'Database error: {str(e)}',type='negative');return
-    # function to show the details of the user in a dialog when the admin clicks on a row in the table
+    # fn to show the details of the user in a dialog when the admin clicks on a row in the table
     async def showDetails(ids):
         try:
             connection = mysql.connector.connect(host='127.0.0.1',user='root',password='Nikish@2003',database='pentecostmatrimony')
@@ -320,9 +324,9 @@ def personnelForm():
                 for i in holderCard.default_slot.children:label_widget = i.default_slot.children[0];siblingValue += label_widget._text+','
                 data += (siblingValue,)
             else:data += (widgets[x].value,)
+        notifier = ui.notification('Submitting...',type='ongoing',timeout=None,spinner=True)
         await saveData(data+('Pending',))
-        ui.notification('Request sent successfully!',type='success')
-        await asyncio.sleep(0.4)
+        notifier.message = 'Request sent successfully!';notifier.type = 'positive';notifier.spinner = False;notifier.timeout = 2
         ui.navigate.to('/')
     async def handleSubmit():
         if anyEmptyField(userForm,userForm.photo,chips.lists):ui.notification('Please fill all the fields')
@@ -382,7 +386,7 @@ async def home(email:str):
         else:widgets[i].set_value(data[index])
         index += 1
         if index in [7,8]:widgets[i].disable()
-    # a function to update the data in the database
+    # fn to update the data in the database
     async def updateData(data):
         def saveData():
             try:
@@ -393,7 +397,7 @@ async def home(email:str):
                 cursor.close();connection.close()
             except mysql.connector.Error as e:print(e)
         await run.io_bound(saveData)
-    # a function to handle the submit button click and update the data in the database
+    # fn to handle the submit button click and update the data in the database
     async def handleSubmit():
         if anyEmptyField(userForm,userForm.photo,chips.lists):ui.notification('Please fill all the fields')
         else:
@@ -407,9 +411,10 @@ async def home(email:str):
                 else:data += (widgets[x].value,)
             data += ('Approved',email)
             await updateData(data);ui.notification('Details updated successfully!')
-    with ui.grid(columns='20% 80%').classes('w-full items-center justify-center'):ui.button('Update',icon='edit',on_click=handleSubmit);ui.label(supportLabel[:-1]).classes('flex-grow text-center').style('font-size: 17px; font-family: Times New Roman; color: black')
+    with ui.grid(columns='24% 76%').classes('w-full items-center justify-center'):ui.button('Update',icon='edit',on_click=handleSubmit);ui.label(supportLabel[:-1]).classes('flex-grow text-center').style('font-size: 17px; font-family: Times New Roman; color: black')
     # it creates a pdf
     async def downloadPdf():
+        notifier = ui.notification(message='Generating PDF...',type='ongoing',timeout=None,spinner=True)
         from fpdf import FPDF,FontFace
         import io
         data = list(detailsCard.data)
@@ -443,8 +448,9 @@ async def home(email:str):
         pdf.line(10, y, 200, y)
         pdf.write_html('<p align="center">Clarification on your biodata to any of these nos. <b>Bro. D. Annadoss</b> (Telegram no. 9884153831), <b>Bro. Sekar</b> (Telegram no. 9940408879) for TPM Matrimony.</p>')
         pdfBytes = bytes(pdf.output(dest='S'))
+        notifier.message = 'PDF Generated! Downloading...';notifier.type = 'success';notifier.spinner = False;notifier.timeout = 2
         ui.download(pdfBytes,filename=f'{data[1]}_biodata.pdf')
-    # a function that creates a details card to show the details of the user
+    # fn that creates a details card to show the details of the user
     def showCurrentDetails(i):
         index = 0
         detailsCard.clear()
@@ -457,14 +463,14 @@ async def home(email:str):
                     ui.label(x).style('font-size: 24px; font-weight: bold; font-family: Times New Roman; color: #333')
                     index += 1
         overCoverCard.set_visibility(True)
-    # a function to refresh the master card with the updated data after search or any operation
+    # fn to refresh the master card with the updated data after search or any operation
     def refreshMaster(data):
         with matchDataMaster:
             for i in data:
                 currentUser = ui.card().classes('hover-card w-full h-90').style('background-color: #fff; border-radius: 8px; box-shadow: 0 2px 4px rgba(0, 0, 0, 0.5)')
                 with currentUser:ui.image(f"data:image/{filetype.guess(i[1]).mime or 'jpeg'};base64,{base64.b64encode(i[1]).decode()}").classes('w-full h-full').style('background-color: #fff; border-radius: 8px')
                 currentUser.on('click',lambda i=i:showCurrentDetails(i))
-    # a function to assign the users in the master card based on the search or any operation
+    # fn to assign the users in the master card based on the search or any operation
     async def assignUsers():
         matchDataMaster.clear()
         dob,gender = data[6],data[7]
@@ -485,7 +491,7 @@ async def home(email:str):
         task.add_done_callback(lambda x:refreshMaster(x.result()))
     await assignUsers()
     searchInput.on('keydown.enter',lambda x:assignUsers())
-    searchInput.on('blur',lambda x:assignUsers())
+    # searchInput.on('blur',lambda x:assignUsers())
     # from this details card set-up
     overCoverCard = ui.card().classes('p-4 w-screen h-full bg-transparent shadow-none border border-gray-300 items-center justify-center').style('position: absolute; top:0px; left:0px; margin:0; border-radius:0;background-color: white; backdrop-filter: blur(10px); border-radius: 8px; box-shadow: 0 4px 8px rgba(0, 0, 0, 0.5); padding:20px;')
     with overCoverCard:userCardDetails = ui.card().classes('w-[60%] h-full items-center justify-center').style('background-color: grey; backdrop-filter: blur(10px); border-radius: 8px; box-shadow: 0 4px 8px rgba(0, 0, 0, 0.5); padding:20px;')
@@ -517,9 +523,10 @@ async def login():
             password = ui.input('Password', placeholder='Enter your password', password=1,password_toggle_button=1).classes('white-input w-full')
             # fetches the user data
             async def handleLogin():
+                notifier = ui.notification(message='Checking credentials...',type='ongoing',timeout=5,spinner=True)
                 data = await emailValidation(currentUser.value)
-                if data:checkUser(data, password.value)
-                else:ui.notification('No account found with this email. Please register first.',type='negative')
+                if data:checkUser(notifier,data,password.value)
+                else:notifier.message='No account found with this email. Please register first.';notifier.type='negative';notifier.spinner=False;notifier.timeout=2
             ui.button('Sign in',on_click=handleLogin,icon='login',color='red').classes('w-full')
             ui.link('Register',target='/register')
     supportLabel = 'Contact us:'
