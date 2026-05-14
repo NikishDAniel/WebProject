@@ -227,7 +227,7 @@ async def admin():
     ui.add_css('''.custom-table thead th {font-family: "Times New Roman";font-size: 24px;font-weight: bold;text-align: center;color: blue;}
                .custom-table tbody td {font-family: "Times New Roman";font-size: 18px;;text-align: center}''')
     # fn to update the request status of the user in the database when the admin approves or rejects a request
-    async def update(id,value):
+    async def update(detailsMaster,id,value):
         notifier = ui.notification(message='Saving..',spinner=True,timeout=None,type='ongoing')
         try:
             connection = mysql.connector.connect(host='127.0.0.1',user='root',password='Nikish@2003',database='pentecostmatrimony')
@@ -235,9 +235,9 @@ async def admin():
             cursor.execute('''update userData set requestStatus = %s where id = %s''',(value,id))
             connection.commit()
             cursor.close();connection.close()
+            detailsMaster.close()
             notifier.message='Saved';notifier.spinner=False;notifier.type='positive';notifier.timeout=2
-        except mysql.connector.Error as e:
-            notifier.message=f'Database error: {str(e)}';notifier.type='negative';notifier.spinner=False;notifier.timeout=2;return
+        except mysql.connector.Error as e:notifier.message=f'Database error: {str(e)}';notifier.type='negative';notifier.spinner=False;notifier.timeout=2;return
     # fn to show the details of the user in a dialog when the admin clicks on a row in the table
     async def showDetails(ids):
         try:
@@ -258,8 +258,8 @@ async def admin():
             ui.separator()
             if masterType!='All Data':
                 with ui.row().classes('w-full items-center gap-2'):
-                    ui.button('Approve',icon='check',on_click=lambda:update(ids,'Approved')).props('color=green rounded outline').classes('w-[40%] mx-auto')
-                    rejectButton = ui.button('Reject',icon='close',on_click=lambda:update(ids,'Rejected')).props('color=red rounded outline').classes('w-[40%] mx-auto')
+                    ui.button('Approve',icon='check',on_click=lambda:update(detailsMaster,ids,'Approved')).props('color=green rounded outline').classes('w-[40%] mx-auto')
+                    rejectButton = ui.button('Reject',icon='close',on_click=lambda:update(detailsMaster,ids,'Rejected')).props('color=red rounded outline').classes('w-[40%] mx-auto')
                     if masterType=='Rejected Request Data':rejectButton.set_visibility(0)
             ui.label(f'Registration Number: {data[0]}').classes('w-full text-center').style('font-size: 20px; font-family: Times New Roman; color: black')
             ui.interactive_image(f"data:image/{filetype.guess(data[1]).mime or 'jpeg'};base64,{base64.b64encode(data[1]).decode()}").classes('w-[90%] h-[90%] mx-auto rounded-full').style('object-fit:cover')
@@ -449,7 +449,7 @@ async def home(email:str):
                 currentRow.cell(updatedFields[i],style=headerStyle);currentRow.cell(str(data[i]),style=headerStyle)
         y = pdf.get_y()+2
         pdf.line(10, y, 200, y)
-        pdf.write_html('<p align="center">Clarification on your biodata to any of these nos. <b>Bro. D. Annadoss</b> (Telegram no. 9884153831), <b>Bro. Sekar</b> (Telegram no. 9940408879) for TPM Matrimony.</p>')
+        pdf.write_html(f'<p align="center">Clarification on your biodata to any of these nos. <b>{supportLabel}</b> for TPM Matrimony.</p>')
         pdfBytes = bytes(pdf.output(dest='S'))
         notifier.message = 'PDF Generated! Downloading...';notifier.type = 'success';notifier.spinner = False;notifier.timeout = 2
         ui.download(pdfBytes,filename=f'{data[1]}_biodata.pdf')
@@ -520,7 +520,7 @@ async def login():
                .white-input .q-field__append .q-icon {color: white !important;}
                .white-input .q-field__append .q-icon:hover {color: grey !important;}''')
     with ui.column().classes('w-full h-screen items-center justify-center overflow-hidden'):
-        with ui.card().classes('md:w-1/3 lg:w-1/4 p-6').style('background-color: rgba(0, 0, 0, 0.6); backdrop-filter: blur(8px); border-radius: 10px; box-shadow: 0 4px 8px rgba(0, 0, 0, 0.5);'):  # master frame
+        with ui.card().classes('w-1/3 h-1/2').style('background-color: rgba(0, 0, 0, 0.6); backdrop-filter: blur(8px); border-radius: 10px; box-shadow: 0 4px 8px rgba(0, 0, 0, 0.5);'):  # master frame
             ui.label('Login to your Account').classes('text-center w-full').style('font-size: 28px; font-weight: bold; font-family: Times New Roman; color: white')
             currentUser = ui.input('Email', placeholder='Enter your email').classes('white-input w-full')
             password = ui.input('Password', placeholder='Enter your password', password=1,password_toggle_button=1).classes('white-input w-full')
