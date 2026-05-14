@@ -59,17 +59,3 @@
 # cipher = Fernet(key)
 # print(cipher.encrypt('admin123'.encode()).decode('utf-8'))
 
-
-from nicegui import ui
-import asyncio
-
-@ui.page('/',title='Test')
-async def home():
-    async def save():
-        notifier = ui.notification(message='Saving...',spinner=True,timeout=None,type='ongoing')
-        await asyncio.sleep(3)
-        notifier.message='Saved successfully!';notifier.spinner=False;notifier.timeout=2
-        notifier.icon='check';notifier.type='positive'
-    ui.button('Save',on_click=save)
-
-ui.run()
