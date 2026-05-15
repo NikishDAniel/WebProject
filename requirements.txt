@@ -1,9 +1,5 @@
 nicegui
-mysql.connector
-base64
+mysql-connector-python
 filetype
-asyncio
 cryptography
-random
-io
 fpdf2
