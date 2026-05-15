@@ -537,4 +537,4 @@ async def login():
         if i[4]=='1':supportLabel += f' Bro.{i[3]} (Ph no.{i[5]}),'
     ui.label(supportLabel[:-1]).classes('absolute bottom-4 left-2').style('font-size: 16px; font-family: Times New Roman; color: white')
 
-ui.run(host='0.0.0.0', port=80)
+ui.run(host='0.0.0.0', port=8080)
