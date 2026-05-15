@@ -19,7 +19,7 @@ def anyEmptyField(userForm,photo,languages):
 # fn to fetch admin data
 async def fetchAdmin():
     try:
-        connection = mysql.connector.connect(host='aws.connect.psdb.cloud',user='root',password='Nikish@2003',database='pentecostmatrimony')
+        connection = mysql.connector.connect(host='127.0.0.1',user='root',password='Nikish@2003',database='pentecostmatrimony')
         cursor = connection.cursor()
         cursor.execute('''select id,email,passwords,name,profession,WhatsAppTelegram from userData where role = "admin"''')
         result = cursor.fetchall()
@@ -30,7 +30,7 @@ async def fetchAdmin():
 async def emailValidation(email='',check=0):
     container = ui.column()
     def fetchData():
-        try:connection = mysql.connector.connect(host='aws.connect.psdb.cloud',user='root',password='Nikish@2003',database='pentecostmatrimony')
+        try:connection = mysql.connector.connect(host='127.0.0.1',user='root',password='Nikish@2003',database='pentecostmatrimony')
         except mysql.connector.Error as error:
             with container:ui.notification(f'Database error: {str(error)}',type='negative')
             return None
@@ -162,7 +162,7 @@ async def adminOperation():
     async def updateAdmin(id='',state=''):
         notifier = ui.notification(message='Saving data...',type='ongoing',timeout=None,spinner=True)
         try:
-            connection = mysql.connector.connect(host='aws.connect.psdb.cloud',user='root',password='Nikish@2003',database='pentecostmatrimony')
+            connection = mysql.connector.connect(host='127.0.0.1',user='root',password='Nikish@2003',database='pentecostmatrimony')
             cursor = connection.cursor()
             if adminLabel.text=='Add New Admin':
                 for i in adminGrid:email,password,name,contact = [x.value for x in i if x.__class__.__name__ == 'Input']
@@ -230,7 +230,7 @@ async def admin():
     async def update(detailsMaster,id,value):
         notifier = ui.notification(message='Saving..',spinner=True,timeout=None,type='ongoing')
         try:
-            connection = mysql.connector.connect(host='aws.connect.psdb.cloud',user='root',password='Nikish@2003',database='pentecostmatrimony')
+            connection = mysql.connector.connect(host='127.0.0.1',user='root',password='Nikish@2003',database='pentecostmatrimony')
             cursor = connection.cursor()
             cursor.execute('''update userData set requestStatus = %s where id = %s''',(value,id))
             connection.commit()
@@ -241,7 +241,7 @@ async def admin():
     # fn to show the details of the user in a dialog when the admin clicks on a row in the table
     async def showDetails(ids):
         try:
-            connection = mysql.connector.connect(host='aws.connect.psdb.cloud',user='root',password='Nikish@2003',database='pentecostmatrimony')
+            connection = mysql.connector.connect(host='127.0.0.1',user='root',password='Nikish@2003',database='pentecostmatrimony')
             cursor = connection.cursor()
             cursor.execute('select * from userData where id = %s',(ids,))
             data = cursor.fetchone()
@@ -271,7 +271,7 @@ async def admin():
         detailsMaster.open()
     async def refreshDataMaster(type='',databaseFilter='',searchField=''):
         try:
-            connection = mysql.connector.connect(host='aws.connect.psdb.cloud',user='root',password='Nikish@2003',database='pentecostmatrimony')
+            connection = mysql.connector.connect(host='127.0.0.1',user='root',password='Nikish@2003',database='pentecostmatrimony')
             cursor = connection.cursor(dictionary=True)
             if searchField:
                 if masterLabel.text=='All Data':
@@ -313,7 +313,7 @@ def personnelForm():
     async def addData():
         async def saveData(data):
             try:
-                connection = mysql.connector.connect(host='aws.connect.psdb.cloud',user='root',password='Nikish@2003',database='pentecostmatrimony')
+                connection = mysql.connector.connect(host='127.0.0.1',user='root',password='Nikish@2003',database='pentecostmatrimony')
                 cursor = connection.cursor()
                 cursor.execute('insert into userData(Photo,Email,Passwords,Name,Profession,Dob,Gender,Qualification,Height,Income,FamilyOrigin,MaritalStatus,Languages,FatherName,MotherName,ParentsNumber,WhatsAppTelegram,Status,Hometown,CurrentAddress,Siblings,LocalFaithHome,CenterFaithHome,Expectations,requestStatus) VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)',data)
                 connection.commit()
@@ -359,7 +359,7 @@ async def home(email:str):
     ui.timer(5,showVerse)
     # fetch user data
     async def fetchData():
-        connection = mysql.connector.connect(host='aws.connect.psdb.cloud',user='root',password='Nikish@2003',database='pentecostmatrimony')
+        connection = mysql.connector.connect(host='127.0.0.1',user='root',password='Nikish@2003',database='pentecostmatrimony')
         cursor = connection.cursor()
         cursor.execute('''select * from userData where email = %s''',(email,))
         data = cursor.fetchone()
@@ -393,7 +393,7 @@ async def home(email:str):
     async def updateData(data):
         def saveData():
             try:
-                connection = mysql.connector.connect(host='aws.connect.psdb.cloud',user='root',password='Nikish@2003',database='pentecostmatrimony')
+                connection = mysql.connector.connect(host='127.0.0.1',user='root',password='Nikish@2003',database='pentecostmatrimony')
                 cursor = connection.cursor()
                 cursor.execute('update userData set Photo=%s,Email=%s,Passwords=%s,Name=%s,Profession=%s,Dob=%s,Gender=%s,Qualification=%s,Height=%s,Income=%s,FamilyOrigin=%s,MaritalStatus=%s,Languages=%s,FatherName=%s,MotherName=%s,ParentsNumber=%s,WhatsAppTelegram=%s,Status=%s,Hometown=%s,CurrentAddress=%s,Siblings=%s,LocalFaithHome=%s,CenterFaithHome=%s,Expectations=%s,requestStatus=%s where Email=%s',data)
                 connection.commit()
@@ -478,7 +478,7 @@ async def home(email:str):
         matchDataMaster.clear()
         dob,gender = data[6],data[7]
         async def search():
-            try:connection = mysql.connector.connect(host='aws.connect.psdb.cloud',user='root',password='Nikish@2003',database='pentecostmatrimony')
+            try:connection = mysql.connector.connect(host='127.0.0.1',user='root',password='Nikish@2003',database='pentecostmatrimony')
             except mysql.connector.Error as error:return None
             fieldValue = searchInput.value
             try:
