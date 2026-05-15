@@ -269,6 +269,7 @@ async def admin():
                     ui.label(i).classes('w-full text-left').style('font-size: 20px; font-family: Times New Roman; color: black')
                     index += 1
         detailsMaster.open()
+    # a fn to refresh the data
     async def refreshDataMaster(type='',databaseFilter='',searchField=''):
         try:
             connection = mysql.connector.connect(host='127.0.0.1',user='root',password='Nikish@2003',database='pentecostmatrimony')
@@ -350,6 +351,7 @@ async def home(email:str):
                .hover-card:hover {transform: scale(1.03);box-shadow: 0 10px 25px rgba(0,0,0,0.2);}""")
     verseCard = ui.card().classes('w-full p-4').style('background-color: #f0f0f0; border-radius: 8px; box-shadow: 0 4px 8px rgba(0, 0, 0, 0.5); position:relative; overflow:hidden;')
     versesList = list(verses.keys())
+    # a fn to show the random verse 
     async def showVerse():currentVerse = random.choice(versesList);verseLabel.set_text(verses[currentVerse]);verse.set_text(currentVerse)
     with verseCard:
         with ui.row().classes('w-full items-center'):
@@ -379,6 +381,7 @@ async def home(email:str):
     emailWidget.disable()
     password.set_value(cipher.decrypt(data[3].encode('utf-8')).decode())
     index = 4
+    # it adds the chips to the languages to the widget
     def addChips(currentLanguage):ui.chip(currentLanguage, icon='label', color='silver', removable=True).on('remove',lambda e:chips.lists.remove(currentLanguage))
     for i in widgets:
         if index==13:
