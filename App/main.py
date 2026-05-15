@@ -95,6 +95,7 @@ def siblingsWidget():
 
 # registration and user form
 def form(textColor,bgColor,width='60'):
+    from datetime import date
     ui.add_head_html(f'''<style>.avatar-container:hover .camera-icon {{background: {textColor} !important;color: {bgColor} !important;}}</style>''')
     ui.add_css(f'''
             .dynamic-form .q-field__label {{color: {textColor} !important;}}
@@ -148,6 +149,7 @@ def form(textColor,bgColor,width='60'):
                 with chips:pass
             elif widgetType == 'siblings':
                 with userForm:sibling,holderCard = siblingsWidget()
+            elif widgetType == 'date_input':ui.date_input(label=label,placeholder=f'Enter your {label}',value=date.today())
             elif widgetType == 'select':options = value.split(',');widget = ui.select(options=options,label=label,value=options[0]).classes('w-full').style('margin-top:10px')
             elif widgetType == 'radio':options = value.split(',');widget = ui.radio(options=options,value=options[0]).props('inline').classes('w-full').style('margin-top:10px')
             else:widget = getattr(ui, widgetType)(label=label).classes('w-full').style('margin-top:10px')
