@@ -1,1 +1,9 @@
-NICEGUI
+nicegui
+mysql.connector
+base64
+filetype
+asyncio
+cryptography
+random
+io
+fpdf2
