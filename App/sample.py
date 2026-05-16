@@ -59,8 +59,3 @@
 # cipher = Fernet(key)
 # print(cipher.encrypt('admin123'.encode()).decode('utf-8'))
 
-import tkinter as tk
-from tkinter import font
-
-root = tk.Tk()
-print(font.families())
