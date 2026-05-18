@@ -313,6 +313,7 @@ def personnelForm():
     ui.page_title('Register Form')
     ui.label('Registration Form').classes('text-center w-full').style('font-size: 28px; font-weight: bold; font-family: Times New Roman; color: #333')
     with ui.column().classes('w-full h-screen items-center justify-center'):widgets,userForm,avatar,email,password,chips,sibling,holderCard = form('#333','#f9f9f9',240)
+    # a fn to save new register data
     async def addData():
         async def saveData(data):
             try:
@@ -321,7 +322,7 @@ def personnelForm():
                 cursor.execute('insert into userData(Photo,Email,Passwords,Name,Profession,Dob,Gender,Qualification,Height,Income,FamilyOrigin,MaritalStatus,Languages,FatherName,MotherName,ParentsNumber,WhatsAppTelegram,Status,Hometown,CurrentAddress,Siblings,LocalFaithHome,CenterFaithHome,Expectations,requestStatus) VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)',data)
                 connection.commit()
                 cursor.close();connection.close()
-            except mysql.connector.Error as e:print(e)
+            except mysql.connector.Error as e:ui.notification(f'Database error: {str(e)}.',type='negative')
         data = (userForm.photo,email.value,cipher.encrypt(password.value.encode()).decode('utf-8'),)
         for x in widgets:
             if x=='languagesKnown':data += (','.join(chips.lists),)
