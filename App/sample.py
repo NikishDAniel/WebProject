@@ -68,4 +68,6 @@ async def validateEntry(value):
 @ui.page('/')
 async def main(title='Home'):
     ui.input(label='Phone Number',placeholder='Enter your Phone Number',validation=lambda x:validateEntry(x))
+    async def returning():
+        return 0
 ui.run()

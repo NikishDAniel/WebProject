@@ -321,8 +321,8 @@ def personnelForm():
                 cursor = connection.cursor()
                 cursor.execute('insert into userData(Photo,Email,Passwords,Name,Profession,Dob,Gender,Qualification,Height,Income,FamilyOrigin,MaritalStatus,Languages,FatherName,MotherName,ParentsNumber,WhatsAppTelegram,Status,Hometown,CurrentAddress,Siblings,LocalFaithHome,CenterFaithHome,Expectations,requestStatus) VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)',data)
                 connection.commit()
-                cursor.close();connection.close()
-            except mysql.connector.Error as e:ui.notification(f'Database error: {str(e)}.',type='negative')
+                cursor.close();connection.close();return 1
+            except mysql.connector.Error as e:ui.notification(f'Database error: {str(e)}.',type='negative');return 0
         data = (userForm.photo,email.value,cipher.encrypt(password.value.encode()).decode('utf-8'),)
         for x in widgets:
             if x=='languagesKnown':data += (','.join(chips.lists),)
@@ -332,8 +332,10 @@ def personnelForm():
                 data += (siblingValue,)
             else:data += (widgets[x].value,)
         notifier = ui.notification('Submitting...',type='ongoing',timeout=None,spinner=True)
-        await saveData(data+('Pending',))
-        notifier.message = 'Request sent successfully!';notifier.type = 'positive';notifier.spinner = False;notifier.timeout = 2
+        saveStatus = await saveData(data+('Pending',))
+        if saveStatus:notifier.message = 'Request sent successfully!';notifier.type = 'positive'
+        else:notifier.message = 'Something went wrong';notifier.type = 'negative'
+        notifier.spinner = False;notifier.timeout = 2
         ui.navigate.to('/')
     async def handleSubmit():
         if anyEmptyField(userForm,userForm.photo,chips.lists):ui.notification('Please fill all the fields')
