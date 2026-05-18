@@ -61,13 +61,12 @@
 
 from nicegui import ui
 
-async def validateEntry(value):
-    if not value:return 
-    elif not value[-1].isdigit():return 'Enter numbers only'
+async def validateEntry(master):
+    currentValue = master.value
+    if currentValue and not currentValue[-1].isdigit():master.value = currentValue[:-1]
 
 @ui.page('/')
-async def main(title='Home'):
-    ui.input(label='Phone Number',placeholder='Enter your Phone Number',validation=lambda x:validateEntry(x))
-    async def returning():
-        return 0
+async def main():
+    phoneNumber = ui.input(label='Phone Number',placeholder='Enter your Phone Number')
+    phoneNumber.on('update:model-value',lambda:validateEntry(phoneNumber))
 ui.run()
