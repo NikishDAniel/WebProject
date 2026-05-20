@@ -59,3 +59,14 @@
 # cipher = Fernet(key)
 # print(cipher.encrypt('admin123'.encode()).decode('utf-8'))
 
+from nicegui import ui
+
+async def validateEntry(master):
+    currentValue = master.value
+    if currentValue and not currentValue[-1].isdigit():master.value = currentValue[:-1]
+
+@ui.page('/')
+async def main():
+    phoneNumber = ui.input(label='Phone Number',placeholder='Enter your Phone Number')
+    phoneNumber.on('update:model-value',lambda:validateEntry(phoneNumber))
+ui.run()

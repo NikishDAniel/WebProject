@@ -1,0 +1,5 @@
+nicegui
+mysql-connector-python
+filetype
+cryptography
+fpdf2
