@@ -69,4 +69,4 @@ async def validateEntry(master):
 async def main():
     phoneNumber = ui.input(label='Phone Number',placeholder='Enter your Phone Number')
     phoneNumber.on('update:model-value',lambda:validateEntry(phoneNumber))
-ui.run()
+ui.run(on_air=True)
