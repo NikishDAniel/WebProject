@@ -50,7 +50,7 @@ async def emailValidation(email='',check=0):
 def checkUser(notifier,data,passwordEntry):
     email,validPassword,role,requestStatus = data
     if cipher.decrypt(validPassword.encode('utf-8')).decode()==passwordEntry:
-        if role=='admin':ui.navigate.to('/admin')
+        if role=='admin':notifier.message='Login successful!';notifier.type='positive';notifier.spinner=False;notifier.timeout=2;ui.navigate.to('/admin')
         else:
             if requestStatus=='Pending':notifier.message='Your request is still pending';notifier.type='warning';notifier.spinner=False;notifier.timeout=2
             elif requestStatus=='Rejected':notifier.message='Your request is rejected';notifier.type='negative';notifier.spinner=False;notifier.timeout=2
@@ -76,16 +76,18 @@ def searchWithFields():
 
 # testrun in sample.py
 def siblingsWidget():
-    ui.add_css(f'''.sibling-widget .q-field__label,.sibling-widget .q-field__native,.sibling-widget .q-icon,.sibling-widget .q-checkbox__label,.sibling-widget .q-select {{color: black  !important;}}''')
-    with ui.card().classes('w-full h-[40%] sibling-widget') as siblingsWidgets:
+    ui.add_css('''.sibling-widget .q-field__label,.sibling-widget .q-field__native,.sibling-widget .q-icon,.sibling-widget .q-checkbox__label,
+    .sibling-widget .q-select,.sibling-widget .q-field__input {color: black !important;}.sibling-widget .q-field--outlined .q-field__control:before,
+    .sibling-widget .q-field--outlined .q-field__control:after {border-color: black !important;}.sibling-widget .q-checkbox__inner {color: black !important;}''')
+    with ui.card().classes('w-full h-[40%] sibling-widget border border-black') as siblingsWidgets:
         def addSibling(i):
             with holderCard:
                 row = ui.grid(columns=2).classes('gap-2 w-full')
                 with row:ui.label(i);ui.button('',icon='delete',on_click=lambda row=row:holderCard.remove(row)).classes('ml-auto')
-        holderCard = ui.card().classes('w-full h-[40%] overflow-auto')
+        holderCard = ui.card().classes('w-full h-[40%] overflow-auto border border-black')
         with holderCard:pass
         with ui.grid(columns=2).classes('gap-2 w-full'):
-            relationInput = ui.select(['Elder Brother','Elder Sister','Younger Brother','Younger Sister'],value='Elder Brother').props('outlined')
+            relationInput = ui.select(['Elder Brother','Elder Sister','Younger Brother','Younger Sister'],value='Elder Brother').props('outlined').classes('bg-gray-400')
             status = ui.checkbox('Married')
         ui.button('Add',icon='add',on_click=lambda:addSibling(relationInput.value+(' - Married' if status.value else ' - Single'))).style('display:block; margin: 0 auto;')
         def addData(data):
@@ -105,7 +107,7 @@ def form(textColor,bgColor,width='60'):
             .dynamic-form .q-field--standard .q-field__control:before {{border-bottom: 1px solid {textColor} !important;}}
             .dynamic-form .q-field__append i {{color: {textColor} !important;}}
             .dynamic-form .q-icon {{color: {textColor} !important;}}
-            .dynamic-form .q-radio__label,
+            .dynamic-form .q-radio__label {{color: {textColor} !important;}},
             .dynamic-form .q-option-group,
             .dynamic-form .q-select {{color: black  !important;}}''')
     userForm = ui.card().classes(f'dynamic-form w-{width} h-screen text-center').style(f'background-color: {bgColor}; border-radius: 8px; box-shadow: 0 4px 8px rgba(0, 0, 0, 0.5); overflow-y: auto;')
@@ -149,12 +151,24 @@ def form(textColor,bgColor,width='60'):
                 with chips:pass
             elif widgetType == 'siblings':
                 with userForm:sibling,holderCard = siblingsWidget()
-            elif widgetType == 'date_input':ui.date_input(label=label,placeholder=f'Enter your {label}',value=date.today())
+            elif widgetType == 'date_input':widget = ui.date_input(label=label,placeholder=f'Enter your {label}',value=date.today())
             elif widgetType == 'select':options = value.split(',');widget = ui.select(options=options,label=label,value=options[0]).classes('w-full').style('margin-top:10px')
             elif widgetType == 'radio':options = value.split(',');widget = ui.radio(options=options,value=options[0]).props('inline').classes('w-full').style('margin-top:10px')
             else:widget = getattr(ui, widgetType)(label=label).classes('w-full').style('margin-top:10px')
             formWidgets[key] = widget
         return formWidgets,userForm,avatarImage,email,password,chips,sibling,holderCard
+
+@ui.page('/remove')
+async def removeUser():
+    ui.page_title('Remove Account')
+    async def updatedMData():
+        try:connection = mysql.connector.connect(host='127.0.0.1',user='root',password='Nikish@2003',database='pentecostmatrimony')
+        except mysql.connector.Error as error:print(error)
+    with ui.card().classes('w-full h-screen'):
+        ui.label('Remove Account')
+        ui.checkbox('Save to Married Data',value=True,on_change=lambda x:holderCard.set_visibility(x.value))
+        holderCard = ui.card().classes('w-full h-full')
+        with holderCard:ui.label('Data')
     
 @ui.page('/adminOperation')
 async def adminOperation():
@@ -226,7 +240,7 @@ async def adminOperation():
 @ui.page('/admin')
 async def admin():
     ui.page_title('Admin')
-    ui.add_css('''.custom-table thead th {font-family: "Times New Roman";font-size: 24px;font-weight: bold;text-align: center;color: blue;}
+    ui.add_css('''.custom-table thead th {font-family: "Times New Roman";font-size: 24px;font-weight: bold;text-align: center;color: white;background-color: #1976D2}
                .custom-table tbody td {font-family: "Times New Roman";font-size: 18px;;text-align: center}''')
     # fn to update the request status of the user in the database when the admin approves or rejects a request
     async def update(detailsMaster,id,value):
@@ -255,7 +269,7 @@ async def admin():
             with ui.row().classes('w-full items-center no-wrap gap-2'):
                 ui.button('Back',icon='arrow_back',on_click=detailsMaster.close).props('color=red rounded outline').classes('w-1/2 text-left')
                 ui.label('User Details').classes('w-full text-center').style('font-size: 30px; font-weight: bold; font-family: Times New Roman; color: black')
-                ui.button('Delete',icon='delete',).props('color=red rounded outline').classes('w-1/2 text-left').set_visibility(1 if masterType=='All Data' else 0)
+                ui.button('Delete',icon='delete',on_click=lambda:ui.navigate.to('/remove')).props('color=red rounded outline').classes('w-1/2 text-left').set_visibility(1 if masterType=='All Data' else 0)
                 if masterType!='All Data':ui.space().classes('w-1/2')
             ui.separator()
             if masterType!='All Data':
@@ -351,7 +365,7 @@ async def home(email:str):
     verses = {'Genesis 2:18':"The LORD God said, 'It is not good for the man to be alone. I will make a helper suitable for him'",'Mark 10:6-8':"‘made them male and female.For this reason a man will leave his father and mother and be united to his wife,and the two will become one flesh.’",
               'Matthew 19:6':"Therefore what God has joined together, let no one separate.",'Proverbs 5:18':"“He who finds a wife finds what is good and receives favor from the Lord.”",'Proverbs 31:10':"“A wife of noble character who can find? She is worth far more than rubies.”",
               'Colossians 3:14':"And over all these virtues put on love, which binds them all together in perfect unity."}
-    ui.add_css("""body {background-image: url("/icons/userbg.png");background-size: cover;background-position:top center;background-repeat: no-repeat;height: 100vh;}
+    ui.add_css("""body {background-image: url("/icons/userbg.png");background-size: cover;background-position:top center;background-repeat: no-repeat;height: 100vh;margin: 0;}
                .hover-card {transition: all 0.3s ease;}
                .hover-card:hover {transform: scale(1.03);box-shadow: 0 10px 25px rgba(0,0,0,0.2);}""")
     verseCard = ui.card().classes('w-full p-4').style('background-color: #f0f0f0; border-radius: 8px; box-shadow: 0 4px 8px rgba(0, 0, 0, 0.5); position:relative; overflow:hidden;')
@@ -422,7 +436,7 @@ async def home(email:str):
                 else:data += (widgets[x].value,)
             data += ('Approved',email)
             await updateData(data);ui.notification('Details updated successfully!')
-    with ui.grid(columns='24% 76%').classes('w-full items-center justify-center'):ui.button('Update',icon='edit',on_click=handleSubmit);ui.label(supportLabel[:-1]).classes('flex-grow text-center').style('font-size: 17px; font-family: Times New Roman; color: black')
+    with ui.grid(columns='24% 76%').classes('w-full items-center justify-center'):ui.button('Update',icon='edit',on_click=handleSubmit);ui.label(supportLabel[:-1]).classes('flex-grow text-center').style('font-size: 15px; font-family: Times New Roman; color: black')
     # it creates a pdf
     async def downloadPdf():
         notifier = ui.notification(message='Generating PDF...',type='ongoing',timeout=None,spinner=True)
@@ -491,7 +505,7 @@ async def home(email:str):
             fieldValue = searchInput.value
             try:
                 cursor = connection.cursor()
-                query = f'''select * from userData where Dob BETWEEN {f'date_add("{dob}", INTERVAL 0 YEAR) AND date_add("{dob}", INTERVAL 5 YEAR)' if gender=='Male' else f'date_sub("{dob}", INTERVAL 5 YEAR) AND date_sub("{dob}", INTERVAL 0 YEAR)'} and requestStatus = %s and Gender = %s'''
+                query = f'''select * from userData where Dob BETWEEN {f'date_add("{dob}", INTERVAL 0 YEAR) AND date_add("{dob}", INTERVAL 5 YEAR)' if gender=='Male' else f'date_sub("{dob}", INTERVAL 5 YEAR) AND date_sub("{dob}", INTERVAL 0 YEAR)'} and requestStatus = %s and Gender = %s limit 50'''
                 if fieldValue=='':cursor.execute(query,('Approved','Female' if gender=='Male' else 'Male',))
                 else:cursor.execute(query+f' and {searchField.value} = %s',('Approved','Female' if gender=='Male' else 'Male',fieldValue,))
                 result = cursor.fetchall()
@@ -509,7 +523,7 @@ async def home(email:str):
     with userCardDetails:
         ui.label('User Details').classes('w-full text-center').style('font-size: 28px; font-weight: bold; font-family: Times New Roman; color: white')
         with ui.row().classes('w-full items-center justify-between'):
-            ui.button('back',icon='arrow_back',on_click=lambda:overCoverCard.set_visibility(False))
+            ui.button('Back',icon='arrow_back',on_click=lambda:overCoverCard.set_visibility(False))
             ui.button('Download',icon='download',on_click=lambda:downloadPdf())
         detailsCard = ui.card().classes('w-full h-full bg-gray-100 rounded-lg shadow-lg p-4 overflow-auto')
         detailsCard.data = None
