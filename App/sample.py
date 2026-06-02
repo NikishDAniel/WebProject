@@ -59,14 +59,31 @@
 # cipher = Fernet(key)
 # print(cipher.encrypt('admin123'.encode()).decode('utf-8'))
 
+# from nicegui import ui
+
+# async def validateEntry(master):
+#     currentValue = master.value
+#     if currentValue and not currentValue[-1].isdigit():master.value = currentValue[:-1]
+
+# @ui.page('/')
+# async def main():
+#     phoneNumber = ui.input(label='Phone Number',placeholder='Enter your Phone Number')
+#     phoneNumber.on('update:model-value',lambda:validateEntry(phoneNumber))
+# ui.run(on_air=True)
+
 from nicegui import ui
 
-async def validateEntry(master):
-    currentValue = master.value
-    if currentValue and not currentValue[-1].isdigit():master.value = currentValue[:-1]
-
 @ui.page('/')
-async def main():
-    phoneNumber = ui.input(label='Phone Number',placeholder='Enter your Phone Number')
-    phoneNumber.on('update:model-value',lambda:validateEntry(phoneNumber))
-ui.run(on_air=True)
+def main():
+    user_agent = ui.context.client.request.headers.get('User-Agent', '').lower()
+
+    mobile_keywords = [
+        'android', 'iphone', 'ipad', 'ipod',
+        'mobile', 'windows phone'
+    ]
+    is_mobile = any(keyword in user_agent for keyword in mobile_keywords)
+    if is_mobile:
+        ui.label('This application is available only on desktop devices.')
+        return
+    ui.label('Welcome to the desktop version!')
+ui.run()

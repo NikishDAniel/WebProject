@@ -68,7 +68,7 @@ def searchWithFields():
             with searchInput.add_slot('prepend'):ui.icon('search').classes('text-2xl text-gray-500')
             searchButton = ui.button('Search')
             ui.label('Category').classes('text-gray-500')
-            searchField = ui.select(options=['Id','Email','Name','Profession','Gender','Qualification','Height','Income','Background','Marital Status','Languages Known','Family Status','Hometown','Local Faith Home','Centre Faith Home'],value='Id',on_change=lambda:searchInput.set_label('Search by '+searchField.value)).style('width:200px')
+            searchField = ui.select(options=['Id','Name','Profession','Qualification','Height','Income','Background','Marital Status','Languages Known','Family Status','Hometown','Local Faith Home','Centre Faith Home'],value='Id',on_change=lambda:searchInput.set_label('Search by '+searchField.value)).style('width:200px')
     return searchInput,searchField,searchButton
 
 # testrun in sample.py
@@ -301,7 +301,6 @@ async def admin():
                 ui.menu_item('Admin Operation',on_click=lambda:ui.navigate.to('/adminOperation'))
         searchInput,searchField,searchButton = searchWithFields()
         searchButton.on_click(lambda:refreshDataMaster(databaseFilter=searchInput.value,searchField=searchField.value))
-        # searchInput.on('blur',lambda:refreshDataMaster(databaseFilter=searchInput.value,searchField=searchField.value))
     with ui.card().classes('w-full h-screen'):
         masterLabel = ui.label('All Data').classes('w-full text-center').style('font-size: 30px; font-weight: bold; font-family: Times New Roman; color: black')
         tableColumns = [{'name':'id','label':'ID','field':'id'},{'name':'email','label':'Email','field':'email'},{'name':'name','label':'Name','field':'name'}]
