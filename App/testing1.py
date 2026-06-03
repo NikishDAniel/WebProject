@@ -24,7 +24,7 @@ async def fetchAdmin():
         cursor.execute('''select id,email,passwords,name,profession,WhatsAppTelegram from userData where role = "admin"''')
         result = cursor.fetchall()
         return result
-    except mysql.connector.Error as error:return None
+    except mysql.connector.Error as error:ui.notification(f'Database error: {str(error)}',type='negative');return []
 
 # fn to verify the email at the time of login
 async def emailValidation(email='',check=0):
@@ -50,6 +50,7 @@ def checkUser(notifier,data,passwordEntry):
         else:
             if requestStatus=='Pending':notifier.message='Your request is still pending';notifier.type='warning';notifier.spinner=False;notifier.timeout=2
             elif requestStatus=='Rejected':notifier.message='Your request is rejected';notifier.type='negative';notifier.spinner=False;notifier.timeout=2
+            elif requestStatus=='Deleted':notifier.message='Your account is deleted';notifier.type='info';notifier.spinner=False;notifier.timeout=2
             else:notifier.message='Loading...';ui.navigate.to(f'/Home/{email}')
     else:notifier.message='Please enter the email and password correctly';notifier.type='negative';notifier.spinner=False;notifier.timeout=2
 
@@ -68,7 +69,7 @@ def searchWithFields():
             with searchInput.add_slot('prepend'):ui.icon('search').classes('text-2xl text-gray-500')
             searchButton = ui.button('Search')
             ui.label('Category').classes('text-gray-500')
-            searchField = ui.select(options=['Id','Name','Profession','Qualification','Height','Income','Background','Marital Status','Languages Known','Family Status','Hometown','Local Faith Home','Centre Faith Home'],value='Id',on_change=lambda:searchInput.set_label('Search by '+searchField.value)).style('width:200px')
+            searchField = ui.select(options=['Id','Name','Profession','Qualification','Height','Income','Family Origin','Marital Status','Family Status','Hometown','Local Faith Home','Centre Faith Home'],value='Id',on_change=lambda:searchInput.set_label('Search by '+searchField.value)).style('width:200px')
     return searchInput,searchField,searchButton
 
 # testrun in sample.py
@@ -124,7 +125,7 @@ def form(textColor,bgColor,width='60'):
         camera_icon.on('click', lambda: upload.run_method('pickFiles'))
         widgets = {'name':['input','Name',''],'profession':['input','Profession',''],'dateOfBirth':['date_input','Date of Birth',''],'gender':['radio','Gender','Male,Female'],'qualification':['input','Qualification',''],'height':['input','Height (in cm)',''],'income':['input','Income',''],
                    'background':['select','Family Origin','TPM Born,Saved from CSI/Other fellowships,Saved from Catholic fellowship,Saved from Hindu Background,Saved from Muslim Background,Saved from Other Background'],'maritalStatus':['radio','Marital Status','Single,Divorced,Married,Separated,Widowed'],
-                   'languagesKnown':['language','Languages Known',''],'fatherName':['input','Father Name',''],'motherName':['input','Mother Name',''],'parentsNumber':['input','Parents Number',''],'WhatsAppNumber':['input','WhatsApp Number',''],'familyStatus':['select','Family Status','High Class,Middle Class'],
+                   'languagesKnown':['language','Languages Known',''],'fatherName':['input','Father Name',''],'motherName':['input','Mother Name',''],'parentsNumber':['input','Parents Number',''],'WhatsAppNumber':['input','WhatsApp Number',''],'familyStatus':['select','Family Status','Middle Class,Upper Middle Class'],
                    'hometown':['input','Hometown',''],'currentResidentAddress':['textarea','Current Resident Address',''],'siblings':['siblings','Siblings',''],'localFaithHome':['input','Local Faith Home',''],'centreFaithHome':['input','Centre Faith Home',''],'expectations':['textarea','Expectations','']}
         email = ui.input(label='Email',placeholder='Enter your Email').classes('w-full').style('margin-top:10px')
         async def checkEmail():
@@ -226,6 +227,7 @@ async def adminOperation():
 @ui.page('/admin')
 async def admin():
     ui.page_title('Admin')
+    pageResponses = {'Active Data':'','Pending Request Data':'Pending','Rejected Request Data':'Rejected','Deleted Users Data':'Deleted'}
     ui.add_css('''.custom-table thead th {font-family: "Times New Roman";font-size: 24px;font-weight: bold;text-align: center;color: white;background-color: #1976D2}
                .custom-table tbody td {font-family: "Times New Roman";font-size: 18px;;text-align: center}''')
     # fn to update the request status of the user in the database when the admin approves or rejects a request
@@ -238,6 +240,8 @@ async def admin():
             connection.commit()
             cursor.close();connection.close()
             detailsMaster.close()
+            pageLabel = masterLabel.text
+            await refreshDataMaster(databaseFilter=pageResponses[pageLabel])
             notifier.message='Saved';notifier.spinner=False;notifier.type='positive';notifier.timeout=2
         except mysql.connector.Error as e:notifier.message=f'Database error: {str(e)}';notifier.type='negative';notifier.spinner=False;notifier.timeout=2;return
     # fn to show the details of the user in a dialog when the admin clicks on a row in the table
@@ -255,15 +259,14 @@ async def admin():
             with ui.row().classes('w-full items-center no-wrap gap-2'):
                 ui.button('Back',icon='arrow_back',on_click=detailsMaster.close).props('color=red rounded outline').classes('w-1/2 text-left')
                 ui.label('User Details').classes('w-full text-center').style('font-size: 30px; font-weight: bold; font-family: Times New Roman; color: black')
-                # here needs to add fn
-                ui.button('Delete',icon='delete',on_click=lambda:update(detailsMaster,ids,'Deleted')).props('color=red rounded outline').classes('w-1/2 text-left').set_visibility(1 if masterType=='All Data' else 0)
-                if masterType!='All Data':ui.space().classes('w-1/2')
+                ui.button('Delete',icon='delete',on_click=lambda:update(detailsMaster,ids,'Deleted')).props('color=red rounded outline').classes('w-1/2 text-left').set_visibility(1 if masterType=='Active Data' else 0)
+                if masterType!='Active Data':ui.space().classes('w-1/2')
             ui.separator()
-            if masterType!='All Data':
+            if masterType!='Active Data':
                 with ui.row().classes('w-full items-center gap-2'):
-                    ui.button('Approve',icon='check',on_click=lambda:update(detailsMaster,ids,'Approved')).props('color=green rounded outline').classes('w-[40%] mx-auto')
+                    ui.button('Restore' if masterType=='Deleted Users Data' else 'Approve',icon='check',on_click=lambda:update(detailsMaster,ids,'Approved')).props('color=green rounded outline').classes('w-[40%] mx-auto')
                     rejectButton = ui.button('Reject',icon='close',on_click=lambda:update(detailsMaster,ids,'Rejected')).props('color=red rounded outline').classes('w-[40%] mx-auto')
-                    if masterType=='Rejected Request Data':rejectButton.set_visibility(0)
+                    if masterType in ['Rejected Request Data','Deleted Users Data']:rejectButton.set_visibility(0)
             ui.label(f'Registration Number: {data[0]}').classes('w-full text-center').style('font-size: 20px; font-family: Times New Roman; color: black')
             ui.interactive_image(f"data:image/{filetype.guess(data[1]).mime or 'jpeg'};base64,{base64.b64encode(data[1]).decode()}").classes('w-[90%] h-[90%] mx-auto rounded-full').style('object-fit:cover')
             with ui.grid(columns=2).classes('gap-2 w-full'):
@@ -272,41 +275,44 @@ async def admin():
                     ui.label(i).classes('w-full text-left').style('font-size: 20px; font-family: Times New Roman; color: black')
                     index += 1
         detailsMaster.open()
-    # a fn to refresh the data
-    async def refreshDataMaster(type='',databaseFilter='',searchField=''):
-        try:
-            connection = mysql.connector.connect(host='127.0.0.1',user='root',password='Nikish@2003',database='pentecostmatrimony')
-            cursor = connection.cursor(dictionary=True)
-            if searchField:
-                if masterLabel.text=='All Data':
-                    if databaseFilter=='':cursor.execute(f'select id,email,name from userData where role="user" limit 1000')
-                    else:cursor.execute(f'select id,email,name from userData where role="user" and {searchField}=%s limit 1000',(databaseFilter,))
-                elif databaseFilter=='':cursor.execute(f'select id,email,name from userData where requestStatus=%s limit 1000',('Pending' if masterLabel.text=='Pending Request Data' else 'Rejected',))
-                else:cursor.execute(f'select id,email,name from userData where requestStatus=%s and {searchField}=%s limit 1000',('Pending' if masterLabel.text=='Pending Request Data' else 'Rejected',databaseFilter,))
-            else:
-                if type=='All Data':cursor.execute('select id,email,name from userData where role="user" limit 1000')
-                else:cursor.execute('select id,email,name from userData where requestStatus=%s limit 1000',('Pending' if type=='Pending Request Data' else 'Rejected',))
-            data = cursor.fetchall()
-            cursor.close();connection.close()
-        except mysql.connector.Error as e:ui.notification(f'Database error: {str(e)}',type='negative');data = []
+    # a fn to refresh the data in the table
+    async def refreshDataMaster(databaseFilter='',searchField=''):
+        #try:
+        connection = mysql.connector.connect(host='127.0.0.1',user='root',password='Nikish@2003',database='pentecostmatrimony')
+        cursor = connection.cursor(dictionary=True)
+        type = masterLabel.text
+        query = f'select id,email,name from userData where role="user" and requestStatus != "Deleted"'
+        searchField = searchField.replace(' ','')
+        if searchField:
+            if type=='Active Data':
+                if databaseFilter=='':cursor.execute(query+' limit 1000')
+                else:cursor.execute(query+f' and {searchField}=%s limit 1000',(databaseFilter,))
+            elif databaseFilter=='':cursor.execute(f'select id,email,name from userData where requestStatus=%s limit 1000',(pageResponses[type],))
+            else:cursor.execute(f'select id,email,name from userData where requestStatus=%s and {searchField}=%s limit 1000',(pageResponses[type],databaseFilter,))
+        else:
+            if type=='Active Data':cursor.execute(query+' limit 1000')
+            else:cursor.execute('select id,email,name from userData where requestStatus=%s limit 1000',(pageResponses[type],))
+        data = cursor.fetchall()
+        cursor.close();connection.close()
+        #except mysql.connector.Error as e:ui.notification(f'Database error: {str(e)}',type='negative');data = []
         masterTable.rows = data
         masterTable.update()
     with ui.row().classes('w-full h-20 items-center'):  # aligns the search and menu in a row
         with ui.button(icon='menu'):
             with ui.menu():
-                ui.menu_item('All Data', on_click=lambda:[masterLabel.set_text('All Data'),asyncio.create_task(refreshDataMaster(type='All Data'))])
-                ui.menu_item('Pending Request Data', on_click=lambda:[masterLabel.set_text('Pending Request Data'),asyncio.create_task(refreshDataMaster(type='Pending Request Data',databaseFilter='Pending'))])
-                ui.menu_item('Rejected Request Data', on_click=lambda:[masterLabel.set_text('Rejected Request Data'),asyncio.create_task(refreshDataMaster(type='Rejected Request Data',databaseFilter='Rejected'))])
-                ui.menu_item('Deleted Users Data',on_click=lambda:[masterLabel.set_text('Deleted Users Data'),asyncio.create_task(refreshDataMaster(type='Deleted Users Data',databaseFilter='Deleted'))])
+                ui.menu_item('Active Data', on_click=lambda:[masterLabel.set_text('Active Data'),asyncio.create_task(refreshDataMaster())])
+                ui.menu_item('Pending Request Data', on_click=lambda:[masterLabel.set_text('Pending Request Data'),asyncio.create_task(refreshDataMaster(databaseFilter='Pending'))])
+                ui.menu_item('Rejected Request Data', on_click=lambda:[masterLabel.set_text('Rejected Request Data'),asyncio.create_task(refreshDataMaster(databaseFilter='Rejected'))])
+                ui.menu_item('Deleted Users Data',on_click=lambda:[masterLabel.set_text('Deleted Users Data'),asyncio.create_task(refreshDataMaster(databaseFilter='Deleted'))])
                 ui.menu_item('Admin Operation',on_click=lambda:ui.navigate.to('/adminOperation'))
         searchInput,searchField,searchButton = searchWithFields()
         searchButton.on_click(lambda:refreshDataMaster(databaseFilter=searchInput.value,searchField=searchField.value))
     with ui.card().classes('w-full h-screen'):
-        masterLabel = ui.label('All Data').classes('w-full text-center').style('font-size: 30px; font-weight: bold; font-family: Times New Roman; color: black')
+        masterLabel = ui.label('Active Data').classes('w-full text-center').style('font-size: 30px; font-weight: bold; font-family: Times New Roman; color: black')
         tableColumns = [{'name':'id','label':'ID','field':'id'},{'name':'email','label':'Email','field':'email'},{'name':'name','label':'Name','field':'name'}]
         masterTable = ui.table(columns=tableColumns,rows=[],pagination=25).classes('custom-table w-full h-[90%]')
         masterTable.on('rowClick',lambda e:showDetails(e.args[1]['id']))
-        await refreshDataMaster(type='All Data')
+        await refreshDataMaster()
 
 @ui.page('/register')
 def personnelForm():
@@ -319,7 +325,7 @@ def personnelForm():
             try:
                 connection = mysql.connector.connect(host='127.0.0.1',user='root',password='Nikish@2003',database='pentecostmatrimony')
                 cursor = connection.cursor()
-                cursor.execute('insert into userData(Photo,Email,Passwords,Name,Profession,Dob,Gender,Qualification,Height,Income,FamilyOrigin,MaritalStatus,Languages,FatherName,MotherName,ParentsNumber,WhatsAppTelegram,Status,Hometown,CurrentAddress,Siblings,LocalFaithHome,CenterFaithHome,Expectations,requestStatus) VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)',data)
+                cursor.execute('insert into userData(Photo,Email,Passwords,Name,Profession,Dob,Gender,Qualification,Height,Income,FamilyOrigin,MaritalStatus,Languages,FatherName,MotherName,ParentsNumber,WhatsAppTelegram,FamilyStatus,Hometown,CurrentResidentAddress,Siblings,LocalFaithHome,CenterFaithHome,Expectations,requestStatus) VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)',data)
                 connection.commit()
                 cursor.close();connection.close();return 1
             except mysql.connector.Error as e:ui.notification(f'Database error: {str(e)}.',type='negative');return 0
@@ -402,10 +408,10 @@ async def home(email:str):
             try:
                 connection = mysql.connector.connect(host='127.0.0.1',user='root',password='Nikish@2003',database='pentecostmatrimony')
                 cursor = connection.cursor()
-                cursor.execute('update userData set Photo=%s,Email=%s,Passwords=%s,Name=%s,Profession=%s,Dob=%s,Gender=%s,Qualification=%s,Height=%s,Income=%s,FamilyOrigin=%s,MaritalStatus=%s,Languages=%s,FatherName=%s,MotherName=%s,ParentsNumber=%s,WhatsAppTelegram=%s,Status=%s,Hometown=%s,CurrentAddress=%s,Siblings=%s,LocalFaithHome=%s,CenterFaithHome=%s,Expectations=%s,requestStatus=%s where Email=%s',data)
+                cursor.execute('update userData set Photo=%s,Email=%s,Passwords=%s,Name=%s,Profession=%s,Dob=%s,Gender=%s,Qualification=%s,Height=%s,Income=%s,FamilyOrigin=%s,MaritalStatus=%s,Languages=%s,FatherName=%s,MotherName=%s,ParentsNumber=%s,WhatsAppTelegram=%s,FamilyStatus=%s,Hometown=%s,CurrentResidentAddress=%s,Siblings=%s,LocalFaithHome=%s,CenterFaithHome=%s,Expectations=%s,requestStatus=%s where Email=%s',data)
                 connection.commit()
                 cursor.close();connection.close()
-            except mysql.connector.Error as e:print(e)
+            except mysql.connector.Error as e:ui.notification(f'Database error: {str(e)}.',type='negative');return
         await run.io_bound(saveData)
     # fn to handle the submit button click and update the data in the database
     async def handleSubmit():
@@ -490,7 +496,7 @@ async def home(email:str):
                 cursor = connection.cursor()
                 query = f'''select * from userData where Dob BETWEEN {f'date_add("{dob}", INTERVAL 0 YEAR) AND date_add("{dob}", INTERVAL 5 YEAR)' if gender=='Male' else f'date_sub("{dob}", INTERVAL 5 YEAR) AND date_sub("{dob}", INTERVAL 0 YEAR)'} and requestStatus = %s and Gender = %s'''
                 if fieldValue=='':cursor.execute(query+' limit 50',('Approved','Female' if gender=='Male' else 'Male',))
-                else:cursor.execute(query+f' and {searchField.value} = %s limit 50',('Approved','Female' if gender=='Male' else 'Male',fieldValue,))
+                else:cursor.execute(query+f' and {searchField.value.replace(' ','')} = %s limit 50',('Approved','Female' if gender=='Male' else 'Male',fieldValue,))
                 result = cursor.fetchall()
                 cursor.close();connection.close()
             except mysql.connector.Error as error:notifier.message = f'Error fetching data:{error}';notifier.type = 'negative';notifier.spinner = False;notifier.timeout = 2;result = []

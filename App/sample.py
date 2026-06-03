@@ -75,15 +75,12 @@ from nicegui import ui
 
 @ui.page('/')
 def main():
-    user_agent = ui.context.client.request.headers.get('User-Agent', '').lower()
+    def addLanguage():
+        languagesHolder
+    with ui.card():
+        with ui.row().classes('items-center'):
+            ui.input(label='Languages Known',placeholder='Enter the languages you know')
+            ui.button('Add',icon='add').classes('ml-auto')
+        languagesHolder = ui.card().style('width:full;height: 90px;overflow-y: auto;')
 
-    mobile_keywords = [
-        'android', 'iphone', 'ipad', 'ipod',
-        'mobile', 'windows phone'
-    ]
-    is_mobile = any(keyword in user_agent for keyword in mobile_keywords)
-    if is_mobile:
-        ui.label('This application is available only on desktop devices.')
-        return
-    ui.label('Welcome to the desktop version!')
 ui.run()
