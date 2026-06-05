@@ -351,7 +351,7 @@ async def home(email:str):
     verses = {'Genesis 2:18':"The LORD God said, 'It is not good for the man to be alone. I will make a helper suitable for him'",'Mark 10:6-8':"‘made them male and female.For this reason a man will leave his father and mother and be united to his wife,and the two will become one flesh.’",
               'Matthew 19:6':"Therefore what God has joined together, let no one separate.",'Proverbs 5:18':"“He who finds a wife finds what is good and receives favor from the Lord.”",'Proverbs 31:10':"“A wife of noble character who can find? She is worth far more than rubies.”",
               'Colossians 3:14':"And over all these virtues put on love, which binds them all together in perfect unity."}
-    ui.add_css("""body {background-image: url("/icons/userbg.png");background-size: cover;background-position:top center;background-repeat: no-repeat;height: 100vh;margin: 0;}
+    ui.add_css("""body {background-image: url("/icons/userbg.png");background-size: cover;background-position:top center;background-repeat: no-repeat;height: 145vh;margin: 0;}
                .hover-card {transition: all 0.3s ease;}
                .hover-card:hover {transform: scale(1.03);box-shadow: 0 10px 25px rgba(0,0,0,0.2);}""")
     verseCard = ui.card().classes('w-full p-4').style('background-color: #f0f0f0; border-radius: 8px; box-shadow: 0 4px 8px rgba(0, 0, 0, 0.5); position:relative; overflow:hidden;')
@@ -398,7 +398,7 @@ async def home(email:str):
         if index in [7,8]:widgets[i].disable()
     # fn to update the data in the database
     async def updateData(data):
-        def saveData():
+        async def saveData():
             try:
                 connection = mysql.connector.connect(host='127.0.0.1',user='root',password='Nikish@2003',database='pentecostmatrimony')
                 cursor = connection.cursor()
@@ -406,7 +406,7 @@ async def home(email:str):
                 connection.commit()
                 cursor.close();connection.close()
             except mysql.connector.Error as e:ui.notification(f'Database error: {str(e)}.',type='negative');return
-        await run.io_bound(saveData)
+        await saveData
     # fn to handle the submit button click and update the data in the database
     async def handleSubmit():
         if anyEmptyField(userForm,userForm.photo,chips.list):ui.notification('Please fill all the fields')
@@ -420,7 +420,7 @@ async def home(email:str):
                     data += (siblingValue,)
                 else:data += (widgets[x].value,)
             data += ('Approved',email)
-            await updateData(data);ui.notification('Details updated successfully!')
+            await updateData(data);ui.notification('Details updated successfully!',type='positive',icon='check',timeout=2)
     with ui.grid(columns='24% 76%').classes('w-full items-center justify-center'):ui.button('Update',icon='edit',on_click=handleSubmit);ui.label(supportLabel[:-1]).classes('flex-grow text-center').style('font-size: 15px; font-family: Times New Roman; color: black')
     # it creates a pdf
     async def downloadPdf():
@@ -515,7 +515,7 @@ async def login():
     # fetches admin contact details
     ui.page_title('Login Page')
     global supportLabel
-    ui.add_css('''body {background-image: url("/icons/image1.png");background-size: cover;background-position:top center;background-repeat: no-repeat;height: 100vh;}
+    ui.add_css('''body {background-image: url("/icons/image1.png");background-size: cover;background-position:top center;background-repeat:no-repeat;height: 100vh;}
                .white-input .q-field__label {color: white !important;}
                .white-input .q-field__native {color: white !important;}
                .white-input .q-field__control:before {border-bottom: 1px solid white !important;}
