@@ -7,6 +7,23 @@ fields = ['Name','Profession','Date of birth','Gender','Qualification','Height',
 key = b'nWjYyxV8EC5sbgkOMV_YekqyERDo1j2P4SAA_WNujVI='
 cipher = Fernet(key)
 
+# custom language inputs
+def languageWidget():
+    def addLanguage():
+        currentLanguage = languageInput.value.lower().strip()
+        if not currentLanguage or currentLanguage in languagesHolder.list:return
+        with languagesHolder:
+            languagesHolder.list.append(currentLanguage)
+            ui.chip(currentLanguage,icon='label',color='silver',removable=True).on('remove',lambda e:languagesHolder.list.remove(currentLanguage))
+            languageInput.value = ''
+    with ui.card().classes('w-full h-[30%] border border-black'):
+        with ui.row().classes('items-center'):
+            languageInput = ui.input(label='Languages Known',placeholder='Enter the languages').classes('w-[40%]')
+            ui.button('Add',icon='add',color='green',on_click=addLanguage).props('outline color=green rounded outline').classes('w-[50%] ml-auto')
+        languagesHolder = ui.card().classes('w-full h-full overflow-y-auto border border-black')
+        languagesHolder.list = []
+    return languagesHolder
+
 # checks whether all the feilds in the form are filled or not
 def anyEmptyField(userForm,photo,languages):
     if not photo or not languages:return 1
@@ -69,15 +86,12 @@ def searchWithFields():
             with searchInput.add_slot('prepend'):ui.icon('search').classes('text-2xl text-gray-500')
             searchButton = ui.button('Search')
             ui.label('Category').classes('text-gray-500')
-            searchField = ui.select(options=['Id','Name','Profession','Qualification','Height','Income','Family Origin','Marital Status','Family Status','Hometown','Local Faith Home','Centre Faith Home'],value='Id',on_change=lambda:searchInput.set_label('Search by '+searchField.value)).style('width:200px')
+            searchField = ui.select(options=['Id','Name','Profession','Qualification','Height','Income','Family Origin','Marital Status','Family Status','Hometown','Current Resident Address','Local Faith Home','Centre Faith Home'],value='Id',on_change=lambda:searchInput.set_label('Search by '+searchField.value)).style('width:200px')
     return searchInput,searchField,searchButton
 
 # testrun in sample.py
 def siblingsWidget():
-    ui.add_css('''.sibling-widget .q-field__label,.sibling-widget .q-field__native,.sibling-widget .q-icon,.sibling-widget .q-checkbox__label,
-    .sibling-widget .q-select,.sibling-widget .q-field__input {color: black !important;}.sibling-widget .q-field--outlined .q-field__control:before,
-    .sibling-widget .q-field--outlined .q-field__control:after {border-color: black !important;}.sibling-widget .q-checkbox__inner {color: black !important;}''')
-    with ui.card().classes('w-full h-[40%] sibling-widget border border-black') as siblingsWidgets:
+    with ui.card().classes('w-full h-[40%] border border-black') as siblingsWidgets:
         def addSibling(i):
             with holderCard:
                 row = ui.grid(columns=2).classes('gap-2 w-full')
@@ -85,7 +99,7 @@ def siblingsWidget():
         holderCard = ui.card().classes('w-full h-[40%] overflow-auto border border-black')
         with holderCard:pass
         with ui.grid(columns=2).classes('gap-2 w-full'):
-            relationInput = ui.select(['Elder Brother','Elder Sister','Younger Brother','Younger Sister'],value='Elder Brother').props('outlined').classes('bg-gray-400')
+            relationInput = ui.select(['Elder Brother','Elder Sister','Younger Brother','Younger Sister'],value='Elder Brother').props('outlined')
             status = ui.checkbox('Married')
         ui.button('Add',icon='add',on_click=lambda:addSibling(relationInput.value+(' - Married' if status.value else ' - Single'))).style('display:block; margin: 0 auto;')
         def addData(data):
@@ -97,26 +111,17 @@ def siblingsWidget():
 def form(textColor,bgColor,width='60'):
     from datetime import date
     ui.add_head_html(f'''<style>.avatar-container:hover .camera-icon {{background: {textColor} !important;color: {bgColor} !important;}}</style>''')
-    ui.add_css(f'''
-            .dynamic-form .q-field__label {{color: {textColor} !important;}}
-            .dynamic-form .q-field__native {{color: {textColor} !important;}}
-            .dynamic-form .q-field__control:before {{border-bottom: 1px solid {textColor} !important;}}
-            .dynamic-form .q-field__control:after {{border-bottom: 2px solid {textColor} !important;}}
-            .dynamic-form .q-field--standard .q-field__control:before {{border-bottom: 1px solid {textColor} !important;}}
-            .dynamic-form .q-field__append i {{color: {textColor} !important;}}
-            .dynamic-form .q-icon {{color: {textColor} !important;}}
-            .dynamic-form .q-radio__label {{color: {textColor} !important;}},
-            .dynamic-form .q-option-group,
-            .dynamic-form .q-select {{color: black  !important;}}''')
-    userForm = ui.card().classes(f'dynamic-form w-{width} h-screen text-center').style(f'background-color: {bgColor}; border-radius: 8px; box-shadow: 0 4px 8px rgba(0, 0, 0, 0.5); overflow-y: auto;')
+    userForm = ui.card().classes(f'w-{width} h-screen text-center overflow-y-auto').style(f'background: rgba(255,255,255,0.6); backdrop-filter: blur(8px);border-radius: 10px; box-shadow: 0 4px 8px rgba(0, 0, 0, 0.5);')
     userForm.photo = None
     userForm.block = None
     with userForm:
         async def savePhoto(e):
-            userForm.photo = await e.file.read()
-            photoAvatar = base64.b64encode(userForm.photo).decode()
-            avatarImage.set_source(f'data:{e.file.content_type};base64,{photoAvatar}')
-            upload.reset()
+            try:
+                userForm.photo = await e.file.read()
+                photoAvatar = base64.b64encode(userForm.photo).decode()
+                avatarImage.set_source(f'data:{e.file.content_type};base64,{photoAvatar}')
+                upload.reset()
+            except:ui.notification('Error uploading the photo. Please try again.',type='negative')
         upload = ui.upload(auto_upload=True,on_upload=savePhoto).props('accept=image/*').style('display:none')
         with ui.element('div').classes('avatar-container relative w-[150px]'):
             with ui.avatar(size='150px').classes('p-0 overflow-hidden cursor-pointer hover:scale-105 transition-transform duration-300') as avatar:avatarImage = ui.image('https://cdn-icons-png.flaticon.com/512/1077/1077114.png').style('width:100%; height:100%; object-fit:cover')
@@ -136,18 +141,7 @@ def form(textColor,bgColor,width='60'):
         formWidgets = {}
         for key, (widgetType, label, value) in widgets.items():
             if widgetType in ['input', 'textarea']:widget = getattr(ui, widgetType)(label=label,placeholder=f'Enter your {label}').classes('w-full').style('margin-top:10px')
-            elif widgetType == 'language':
-                def add_chip():
-                    currentLanguage = label_input.value.lower().strip()
-                    if currentLanguage in chips.lists:return 1
-                    with chips:
-                        ui.chip(currentLanguage, icon='label', color='silver', removable=True).on('remove',lambda e:chips.lists.remove(currentLanguage))
-                        chips.lists.append(currentLanguage)
-                    label_input.value = ''
-                label_input = ui.input('Add language').on('keydown.enter', add_chip)
-                chips = ui.row().classes('gap-0')
-                chips.lists = []
-                with chips:pass
+            elif widgetType == 'language':language = languageWidget()
             elif widgetType == 'siblings':
                 with userForm:sibling,holderCard = siblingsWidget()
             elif widgetType == 'date_input':widget = ui.date_input(label=label,placeholder=f'Enter your {label}',value=date.today())
@@ -155,7 +149,7 @@ def form(textColor,bgColor,width='60'):
             elif widgetType == 'radio':options = value.split(',');widget = ui.radio(options=options,value=options[0]).props('inline').classes('w-full').style('margin-top:10px')
             else:widget = getattr(ui, widgetType)(label=label).classes('w-full').style('margin-top:10px')
             formWidgets[key] = widget
-        return formWidgets,userForm,avatarImage,email,password,chips,sibling,holderCard
+        return formWidgets,userForm,avatarImage,email,password,language,sibling,holderCard
     
 @ui.page('/adminOperation')
 async def adminOperation():
@@ -328,10 +322,10 @@ def personnelForm():
                 cursor.execute('insert into userData(Photo,Email,Passwords,Name,Profession,Dob,Gender,Qualification,Height,Income,FamilyOrigin,MaritalStatus,Languages,FatherName,MotherName,ParentsNumber,WhatsAppTelegram,FamilyStatus,Hometown,CurrentResidentAddress,Siblings,LocalFaithHome,CenterFaithHome,Expectations,requestStatus) VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)',data)
                 connection.commit()
                 cursor.close();connection.close();return 1
-            except mysql.connector.Error as e:ui.notification(f'Database error: {str(e)}.',type='negative');return 0
+            except mysql.connector.Error as e:print(e);ui.notification(f'Database error: {str(e)}.',type='negative');return 0
         data = (userForm.photo,email.value,cipher.encrypt(password.value.encode()).decode('utf-8'),)
         for x in widgets:
-            if x=='languagesKnown':data += (','.join(chips.lists),)
+            if x=='languagesKnown':data += (','.join(chips.list),)
             elif x=='siblings':
                 siblingValue = ''
                 for i in holderCard.default_slot.children:label_widget = i.default_slot.children[0];siblingValue += label_widget._text+','
@@ -344,7 +338,7 @@ def personnelForm():
         notifier.spinner = False;notifier.timeout = 2
         ui.navigate.to('/')
     async def handleSubmit():
-        if anyEmptyField(userForm,userForm.photo,chips.lists):ui.notification('Please fill all the fields')
+        if anyEmptyField(userForm,userForm.photo,chips.list):ui.notification('Please fill all the fields')
         else:
             if userForm.block:ui.notification('This email is already registered. Please use a different email or login.',type='negative')
             else:await addData()
@@ -392,12 +386,12 @@ async def home(email:str):
     password.set_value(cipher.decrypt(data[3].encode('utf-8')).decode())
     index = 4
     # it adds the chips to the languages to the widget
-    def addChips(currentLanguage):ui.chip(currentLanguage, icon='label', color='silver', removable=True).on('remove',lambda e:chips.lists.remove(currentLanguage))
+    def addChips(currentLanguage):ui.chip(currentLanguage,icon='label',color='silver',removable=True).on('remove',lambda e:chips.list.remove(currentLanguage))
     for i in widgets:
         if index==13:
-            chips.lists = data[index].split(',')
+            chips.list = data[index].split(',')
             with chips:
-                for i in chips.lists:addChips(i)
+                for i in chips.list:addChips(i)
         elif index==21:sibling.addData(data[index].split(',')[:-1])
         else:widgets[i].set_value(data[index])
         index += 1
@@ -415,11 +409,11 @@ async def home(email:str):
         await run.io_bound(saveData)
     # fn to handle the submit button click and update the data in the database
     async def handleSubmit():
-        if anyEmptyField(userForm,userForm.photo,chips.lists):ui.notification('Please fill all the fields')
+        if anyEmptyField(userForm,userForm.photo,chips.list):ui.notification('Please fill all the fields')
         else:
             data = (userForm.photo,email,cipher.encrypt(password.value.encode()).decode('utf-8'),)
             for x in widgets:
-                if x=='languagesKnown':data += (','.join(chips.lists),)
+                if x=='languagesKnown':data += (','.join(chips.list),)
                 elif x=='siblings':
                     siblingValue = ''
                     for i in holderCard.default_slot.children:label_widget = i.default_slot.children[0];siblingValue += label_widget._text+','
@@ -472,7 +466,7 @@ async def home(email:str):
         detailsCard.clear()
         detailsCard.data = i
         with detailsCard:
-            with ui.column().classes('w-full h-full items-center justify-center'):ui.interactive_image(f"data:image/{filetype.guess(i[1]).mime or 'jpeg'};base64,{base64.b64encode(i[1]).decode()}").classes('w-90 h-90').style('background-color: #fff; border-radius: 8px; object-fit:cover;')
+            with ui.column().classes('w-full h-full items-center justify-center'):ui.interactive_image(f"data:image/{filetype.guess(i[1]).mime or 'jpeg'};base64,{base64.b64encode(i[1]).decode()}").classes('w-full h-full').style('background-color: #fff; border-radius: 8px; object-fit:cover;')
             with ui.grid(columns=2).classes('gap-2 w-full'):
                 for x in i[4:-2]:
                     ui.label(fields[index]).style('font-size: 24px; font-weight: bold; font-family: Times New Roman; color: #333')
@@ -482,7 +476,7 @@ async def home(email:str):
     # fn to refresh the master card with the updated data after search or any operation
     async def refreshMaster(notifier,data):
         with matchDataMaster:
-            for i in data:ui.image(f"data:image/{filetype.guess(i[1]).mime or 'jpeg'};base64,{base64.b64encode(i[1]).decode()}").classes('w-full h-full hover-card').on('click',lambda i=i:showCurrentDetails(i))
+            for i in data:ui.image(f"data:image/{filetype.guess(i[1]).mime or 'jpeg'};base64,{base64.b64encode(i[1]).decode()}").classes('w-full h-full hover-card object-cover aspect-square').on('click',lambda i=i:showCurrentDetails(i))
         notifier.dismiss()
     # fn to assign the users in the master card based on the search or any operation
     async def assignUsers():

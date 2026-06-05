@@ -76,11 +76,16 @@ from nicegui import ui
 @ui.page('/')
 def main():
     def addLanguage():
-        languagesHolder
-    with ui.card():
+        currentLanguage = languageInput.value.lower().strip()
+        if not currentLanguage or currentLanguage in languagesHolder.list:return
+        with languagesHolder:
+            languagesHolder.list.append(currentLanguage)
+            ui.chip(currentLanguage,icon='label',color='silver',removable=True).on('remove',lambda e:languagesHolder.list.remove(currentLanguage))
+            languageInput.value = ''
+    with ui.card().classes('w-full h-[40%]'):
         with ui.row().classes('items-center'):
-            ui.input(label='Languages Known',placeholder='Enter the languages you know')
-            ui.button('Add',icon='add').classes('ml-auto')
-        languagesHolder = ui.card().style('width:full;height: 90px;overflow-y: auto;')
-
+            languageInput = ui.input(label='Languages Known',placeholder='Enter the languages you know')
+            ui.button('Add',icon='add',on_click=addLanguage).classes('ml-auto')
+        languagesHolder = ui.card().classes('w-full h-[60%] overflow-y-auto')
+        languagesHolder.list = []
 ui.run()
