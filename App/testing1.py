@@ -86,7 +86,7 @@ def searchWithFields():
             with searchInput.add_slot('prepend'):ui.icon('search').classes('text-2xl text-gray-500')
             searchButton = ui.button('Search')
             ui.label('Category').classes('text-gray-500')
-            searchField = ui.select(options=['Id','Name','Profession','Qualification','Height','Income','Family Origin','Marital Status','Family Status','Hometown','Current Resident Address','Local Faith Home','Centre Faith Home'],value='Id',on_change=lambda:searchInput.set_label('Search by '+searchField.value)).style('width:200px')
+            searchField = ui.select(options=['Id','Name','Profession','Qualification','Height','Income','Family Origin','Marital Status','Family Status','Hometown','Local Faith Home','Centre Faith Home'],value='Id',on_change=lambda:searchInput.set_label('Search by '+searchField.value)).style('width:200px')
     return searchInput,searchField,searchButton
 
 # testrun in sample.py
@@ -271,24 +271,24 @@ async def admin():
         detailsMaster.open()
     # a fn to refresh the data in the table
     async def refreshDataMaster(databaseFilter='',searchField=''):
-        #try:
-        connection = mysql.connector.connect(host='127.0.0.1',user='root',password='Nikish@2003',database='pentecostmatrimony')
-        cursor = connection.cursor(dictionary=True)
-        type = masterLabel.text
-        query = f'select id,email,name from userData where role="user" and requestStatus != "Deleted"'
-        searchField = searchField.replace(' ','')
-        if searchField:
-            if type=='Active Data':
-                if databaseFilter=='':cursor.execute(query+' limit 1000')
-                else:cursor.execute(query+f' and {searchField}=%s limit 1000',(databaseFilter,))
-            elif databaseFilter=='':cursor.execute(f'select id,email,name from userData where requestStatus=%s limit 1000',(pageResponses[type],))
-            else:cursor.execute(f'select id,email,name from userData where requestStatus=%s and {searchField}=%s limit 1000',(pageResponses[type],databaseFilter,))
-        else:
-            if type=='Active Data':cursor.execute(query+' limit 1000')
-            else:cursor.execute('select id,email,name from userData where requestStatus=%s limit 1000',(pageResponses[type],))
-        data = cursor.fetchall()
-        cursor.close();connection.close()
-        #except mysql.connector.Error as e:ui.notification(f'Database error: {str(e)}',type='negative');data = []
+        try:
+            connection = mysql.connector.connect(host='127.0.0.1',user='root',password='Nikish@2003',database='pentecostmatrimony')
+            cursor = connection.cursor(dictionary=True)
+            type = masterLabel.text
+            query = f'select id,email,name from userData where role="user" and requestStatus != "Deleted"'
+            searchField = searchField.replace(' ','')
+            if searchField:
+                if type=='Active Data':
+                    if databaseFilter=='':cursor.execute(query+' limit 1000')
+                    else:cursor.execute(query+f' and {searchField}=%s limit 1000',(databaseFilter,))
+                elif databaseFilter=='':cursor.execute(f'select id,email,name from userData where requestStatus=%s limit 1000',(pageResponses[type],))
+                else:cursor.execute(f'select id,email,name from userData where requestStatus=%s and {searchField}=%s limit 1000',(pageResponses[type],databaseFilter,))
+            else:
+                if type=='Active Data':cursor.execute(query+' limit 1000')
+                else:cursor.execute('select id,email,name from userData where requestStatus=%s limit 1000',(pageResponses[type],))
+            data = cursor.fetchall()
+            cursor.close();connection.close()
+        except mysql.connector.Error as e:ui.notification(f'Database error: {str(e)}',type='negative');data = []
         masterTable.rows = data
         masterTable.update()
     with ui.row().classes('w-full h-20 items-center'):  # aligns the search and menu in a row
@@ -406,7 +406,7 @@ async def home(email:str):
                 connection.commit()
                 cursor.close();connection.close()
             except mysql.connector.Error as e:ui.notification(f'Database error: {str(e)}.',type='negative');return
-        await saveData
+        await saveData()
     # fn to handle the submit button click and update the data in the database
     async def handleSubmit():
         if anyEmptyField(userForm,userForm.photo,chips.list):ui.notification('Please fill all the fields')
