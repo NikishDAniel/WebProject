@@ -2,6 +2,14 @@ from nicegui import ui,app,run
 import mysql.connector,base64,filetype,asyncio
 from cryptography.fernet import Fernet
 
+ui.add_css('''<meta name="viewport" content="width=1400">
+<style>
+body {
+    min-width: 1400px;
+    overflow-x: auto;
+}
+</style>''',shared=1)   # sets the width of the page to 1400px
+
 app.add_static_files('/icons','icons&Images')   # adds floder into the ui
 fields = ['Name','Profession','Date of birth','Gender','Qualification','Height','Income','Background','Marital Status','Languages Known',"Father's Name","Mother's Name", "Parent's Number",'Whatsapp Number','Family Status','Hometown','Current Resident Address','Siblings','Local Faith Home','Centre Faith Home','Expectations']
 key = b'nWjYyxV8EC5sbgkOMV_YekqyERDo1j2P4SAA_WNujVI='
@@ -490,7 +498,7 @@ async def home(email:str):
                 cursor = connection.cursor()
                 query = f'''select * from userData where Dob BETWEEN {f'date_add("{dob}", INTERVAL 0 YEAR) AND date_add("{dob}", INTERVAL 5 YEAR)' if gender=='Male' else f'date_sub("{dob}", INTERVAL 5 YEAR) AND date_sub("{dob}", INTERVAL 0 YEAR)'} and requestStatus = %s and Gender = %s'''
                 if fieldValue=='':cursor.execute(query+' limit 50',('Approved','Female' if gender=='Male' else 'Male',))
-                else:cursor.execute(query+f' and {searchField.value.replace(' ','')} = %s limit 50',('Approved','Female' if gender=='Male' else 'Male',fieldValue,))
+                else:cursor.execute(query+f" and {searchField.value.replace(' ','')} = %s limit 50",('Approved','Female' if gender=='Male' else 'Male',fieldValue,))
                 result = cursor.fetchall()
                 cursor.close();connection.close()
             except mysql.connector.Error as error:notifier.message = f'Error fetching data:{error}';notifier.type = 'negative';notifier.spinner = False;notifier.timeout = 2;result = []
