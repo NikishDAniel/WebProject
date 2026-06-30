@@ -7,6 +7,12 @@ fields = ['Name','Profession','Date of birth','Gender','Qualification','Height',
 key = b'nWjYyxV8EC5sbgkOMV_YekqyERDo1j2P4SAA_WNujVI='
 cipher = Fernet(key)
 
+ui.add_head_html('<meta name="viewport" content="width=1200">',shared=True)
+
+ui.add_css('''
+body {
+    min-width: 1200px;
+    overflow-x: auto;}''',shared=True)
 # custom language inputs
 def languageWidget():
     def addLanguage():
@@ -80,13 +86,13 @@ ui.add_head_html('''
 
 # custom search widget
 def searchWithFields():
-    with ui.card().classes('w-fit p-2 h-18 mx-auto').style(f'background-color: #f0f0f0; border-radius: 8px; box-shadow: 0 4px 8px rgba(0, 0, 0, 0.5);'):
-        with ui.row().classes('items-center gap-2'):
-            searchInput = ui.input(label='Search by Id').style('width:350px')
+    with ui.card().classes('w-full max-w-5xl mx-auto p-3').style(f'background-color: #f0f0f0; border-radius: 8px; box-shadow: 0 4px 8px rgba(0, 0, 0, 0.5);'):
+        with ui.row().classes('w-full items-center gap-2 flex-wrap'):
+            searchInput = ui.input(label='Search by Id').classes('flex-grow min-w-[200px]')
             with searchInput.add_slot('prepend'):ui.icon('search').classes('text-2xl text-gray-500')
             searchButton = ui.button('Search')
             ui.label('Category').classes('text-gray-500')
-            searchField = ui.select(options=['Id','Name','Profession','Qualification','Height','Income','Family Origin','Marital Status','Family Status','Hometown','Local Faith Home','Centre Faith Home'],value='Id',on_change=lambda:searchInput.set_label('Search by '+searchField.value)).style('width:200px')
+            searchField = ui.select(options=['Id','Name','Profession','Qualification','Height','Income','Family Origin','Marital Status','Family Status','Hometown','Local Faith Home','Centre Faith Home'],value='Id',on_change=lambda:searchInput.set_label('Search by '+searchField.value)).classes('w-full sm:w-56')
     return searchInput,searchField,searchButton
 
 # testrun in sample.py
@@ -351,7 +357,7 @@ async def home(email:str):
     verses = {'Genesis 2:18':"The LORD God said, 'It is not good for the man to be alone. I will make a helper suitable for him'",'Mark 10:6-8':"‘made them male and female.For this reason a man will leave his father and mother and be united to his wife,and the two will become one flesh.’",
               'Matthew 19:6':"Therefore what God has joined together, let no one separate.",'Proverbs 5:18':"“He who finds a wife finds what is good and receives favor from the Lord.”",'Proverbs 31:10':"“A wife of noble character who can find? She is worth far more than rubies.”",
               'Colossians 3:14':"And over all these virtues put on love, which binds them all together in perfect unity."}
-    ui.add_css("""body {background-image: url("/icons/userbg.png");background-size: cover;background-position:top center;background-repeat: no-repeat;height: 145vh;margin: 0;}
+    ui.add_css("""body {background-image: url("/icons/userbg.png");background-size: cover;background-position:top center;margin: 0;}
                .hover-card {transition: all 0.3s ease;}
                .hover-card:hover {transform: scale(1.03);box-shadow: 0 10px 25px rgba(0,0,0,0.2);}""")
     verseCard = ui.card().classes('w-full p-4').style('background-color: #f0f0f0; border-radius: 8px; box-shadow: 0 4px 8px rgba(0, 0, 0, 0.5); position:relative; overflow:hidden;')
@@ -515,7 +521,7 @@ async def login():
     # fetches admin contact details
     ui.page_title('Login Page')
     global supportLabel
-    ui.add_css('''body {background-image: url("/icons/image1.png");background-size: cover;background-position:top center;background-repeat:no-repeat;height: 100vh;}
+    ui.add_css('''body {background-image: url("/icons/image1.png");background-size: cover;background-position:top center;}
                .white-input .q-field__label {color: white !important;}
                .white-input .q-field__native {color: white !important;}
                .white-input .q-field__control:before {border-bottom: 1px solid white !important;}
@@ -538,6 +544,6 @@ async def login():
     supportLabel = 'Contact us:'
     for i in await fetchAdmin():
         if i[4]=='1':supportLabel += f' Bro.{i[3]} (Ph no.{i[5]}),'
-    ui.label(supportLabel[:-1]).classes('absolute bottom-4 left-2').style('font-size: 16px; font-family: Times New Roman; color: white')
+    ui.label(supportLabel[:-1]).style('font-size: 16px; font-family: Times New Roman; color: white')
 
 ui.run(host='0.0.0.0', port=8080)
