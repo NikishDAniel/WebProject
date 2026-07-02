@@ -4,10 +4,7 @@ from cryptography.fernet import Fernet
 
 ui.add_css('''<meta name="viewport" content="width=1400">
 <style>
-body {
-    min-width: 1400px;
-    overflow-x: auto;
-}
+body {min-width: 1400px;overflow-x: auto;}
 </style>''',shared=1)   # sets the width of the page to 1400px
 
 app.add_static_files('/icons','icons&Images')   # adds floder into the ui
